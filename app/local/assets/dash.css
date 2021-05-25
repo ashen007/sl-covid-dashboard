@@ -1,0 +1,29 @@
+body {
+    width: 76%;
+    background-color: #2A2D40;
+    font-family: Arial, sans-serif;
+    margin: 0 auto;
+    padding: 0;
+    border: none;
+}
+
+.Select-control {
+    background-color: #2A2D40;
+}
+
+div#area-dropdown {
+    background-color: #2A2D40;
+}
+
+.has-value.Select--single > .Select-control .Select-value .Select-value-label, .has-value.is-pseudo-focused.Select--single > .Select-control .Select-value .Select-value-label {
+    color: #ffffff;
+}
+
+h2#local-header {
+    width: 64%;
+    padding: 0 0 0 10px;
+    margin: 44px auto;
+    color: #fff;
+    font-weight: lighter;
+    border-left: 8px solid #7BA65D;
+}
