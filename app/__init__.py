@@ -22,14 +22,12 @@ def create_app():
 
 def register_dash_app(app, title, base_pathname, layout, register_callback_function):
     meta_viewport = {"name": "viewport", "content": "width=device-width, initial-scale=1, shrink-to-fit=no"}
-    external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
     dash_app = dash.Dash(__name__,
                          server=app,
                          url_base_pathname=f'/{base_pathname}/',
                          meta_tags=[meta_viewport],
                          assets_folder=f'{base_pathname}/assets/',
-                         # external_stylesheets=external_stylesheets,
                          )
     with app.app_context():
         dash_app.title = title
