@@ -4,3 +4,4 @@ plotly
 pandas
 numpy
 statsmodels
+gunicorn
