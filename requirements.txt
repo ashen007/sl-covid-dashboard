@@ -1,0 +1,6 @@
+dash
+flask
+plotly
+pandas
+numpy
+statsmodels
