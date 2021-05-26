@@ -183,3 +183,77 @@ def register_callbacks(dash_app):
             transition_duration=500)
 
         return fig
+
+    @dash_app.callback(Output('vac-lines', 'figure'))
+    def vaccination_line():
+        subset_vac = full_df[full_df['new_vaccinations'] > 0]
+        span = subset_vac.shape[0] / subset_vac['date'].dt.month.nunique()
+        subset_vac['EMA'] = subset_vac.loc[:, 'new_vaccinations'].ewm(span=span, adjust=False).mean()
+        current_rate = subset_vac.tail(1).EMA.values[0]
+        vaccinated_pop = full_df['total_vaccinations'].max()
+
+        to_vaccinate_by_portion = full_df['population'].head(1).values[0] * np.asarray(
+            [0.1, 0.5, 0.73, 1]) - vaccinated_pop
+        days_by_current_rate = np.rint(to_vaccinate_by_portion / current_rate)
+        archive_date = [full_df['date'].max() + datetime.timedelta(days=int(days)) for days in days_by_current_rate]
+        X = (days_by_current_rate / np.sum(days_by_current_rate)) * 100
+
+        figure = go.Figure()
+
+        top_label = ['10%', '50%', '73%', 'fully']
+        y_name = ['vaccination amount of population']
+        colors = ['#F2A488', '#F25C05', '#F24405', '#D90404']
+        widths = [0.15, 0.17, 0.22, 0.25]
+
+        for i in range(len(X)):
+            figure.add_trace(go.Bar(name=top_label[i],
+                                    y=['vaccination'], x=[X[i]],
+                                    orientation='h',
+                                    marker=dict(color=colors[i],
+                                                line_color=colors[i]),
+                                    width=widths[i]))
+
+        figure.update_layout(xaxis=dict(showgrid=False,
+                                        showline=False,
+                                        showticklabels=False,
+                                        zeroline=False),
+                             yaxis=dict(showgrid=False,
+                                        showline=False,
+                                        showticklabels=False,
+                                        zeroline=True),
+                             barmode='stack',
+                             showlegend=False,
+                             width=1200,
+                             paper_bgcolor='#2A2D40',
+                             plot_bgcolor='#2A2D40',
+                             margin=dict(l=40, r=10, t=40, b=40))
+
+        annotations = []
+
+        annotations.append(dict(xref='paper', yref='y',
+                                x=0.14, y=y_name[0],
+                                xanchor='right',
+                                text=str(y_name[0]),
+                                font=dict(size=12,
+                                          color='#fff'),
+                                showarrow=False,
+                                align='right'))
+
+        annotations.append(dict(xref='x', yref='paper',
+                                x=X[0] / 2, y=0.35,
+                                text=f'{top_label[0]}<br>{archive_date[0].date()}',
+                                font=dict(color='#8C8274'),
+                                showarrow=False))
+
+        space = X[0]
+        for i in range(1, len(X)):
+            annotations.append(dict(xref='x', yref='paper',
+                                    x=space + (X[i] / 2), y=0.35,
+                                    text=f'{top_label[i]}<br>{archive_date[i].date()}',
+                                    font=dict(color='#8C8274'),
+                                    showarrow=False))
+            space += X[i]
+
+        figure.update_layout(annotations=annotations)
+
+        return figure
