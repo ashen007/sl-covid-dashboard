@@ -34,12 +34,12 @@ def register_callbacks(dash_app):
                        color='white',
                        zeroline=False),
             yaxis=dict(title='Count',
-                       gridcolor='#3B3659',
+                       gridcolor='#404040',
                        gridwidth=1,
                        showline=False,
                        color='white'),
-            paper_bgcolor='#2A2D40',
-            plot_bgcolor='#2A2D40',
+            paper_bgcolor='#262625',
+            plot_bgcolor='#262625',
             height=600,
             transition_duration=500)
 
@@ -96,14 +96,14 @@ def register_callbacks(dash_app):
                        color='white',
                        zeroline=False),
             yaxis=dict(title='Count',
-                       gridcolor='#3B3659',
+                       gridcolor='#404040',
                        gridwidth=1,
                        showline=False,
                        color='white'),
             legend=dict(font=dict(color='#fff')),
-            paper_bgcolor='#2A2D40',
-            plot_bgcolor='#2A2D40',
-            height=600,
+            paper_bgcolor='#262625',
+            plot_bgcolor='#262625',
+            height=500,
             transition_duration=500)
 
         return fig
@@ -159,14 +159,14 @@ def register_callbacks(dash_app):
                        color='white',
                        zeroline=False),
             yaxis=dict(title='Count',
-                       gridcolor='#3B3659',
+                       gridcolor='#404040',
                        gridwidth=1,
                        showline=False,
                        color='white'),
             legend=dict(font=dict(color='#fff')),
-            paper_bgcolor='#2A2D40',
-            plot_bgcolor='#2A2D40',
-            height=600,
+            paper_bgcolor='#262625',
+            plot_bgcolor='#262625',
+            height=500,
             transition_duration=500)
 
         return fig

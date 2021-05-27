@@ -14,6 +14,11 @@ span = subset_vac.shape[0] / subset_vac['date'].dt.month.nunique()
 subset_vac['EMA'] = subset_vac.loc[:, 'new_vaccinations'].ewm(span=span, adjust=False).mean()
 current_rate = subset_vac.tail(1).EMA.values[0]
 vaccinated_pop = full_df['total_vaccinations'].max()
+vaccination_by_7days = full_df[full_df['date'] > '2021-01-24'][['date', 'new_vaccinations']].resample('7D',
+                                                                                                      on='date').mean()
+vaccination_lag = np.abs(
+    vaccination_by_7days["new_vaccinations"].tail(1).values[0] - vaccination_by_7days["new_vaccinations"].max())
+vaccination_lag = vaccination_lag * 100 / vaccination_by_7days["new_vaccinations"].max()
 
 to_vaccinate_by_portion = full_df['population'].head(1).values[0] * np.asarray(
     [0.1, 0.5, 0.73, 1]) - vaccinated_pop
@@ -47,10 +52,10 @@ vaccination_progress.update_layout(xaxis=dict(showgrid=False,
                                    legend=dict(font=dict(color='#fff')),
                                    barmode='stack',
                                    showlegend=False,
-                                   width=1200,
-                                   paper_bgcolor='#2A2D40',
-                                   plot_bgcolor='#2A2D40',
-                                   margin=dict(l=40, r=10, t=40, b=40))
+                                   width=900,
+                                   paper_bgcolor='#262625',
+                                   plot_bgcolor='#262625',
+                                   margin=dict(l=40, r=10))
 
 annotations = []
 
@@ -101,15 +106,50 @@ vaccination_trend.update_layout(
                color='white',
                zeroline=False),
     yaxis=dict(title='Count',
-               gridcolor='#3B3659',
+               gridcolor='#404040',
                gridwidth=1,
                showline=False,
                color='white'),
-    legend=dict(font=dict(color='#fff')),
-    paper_bgcolor='#2A2D40',
-    plot_bgcolor='#2A2D40',
+    legend=dict(orientation='h',
+                yanchor='top',
+                xanchor='right',
+                x=1, y=1.15,
+                font=dict(color='#fff')),
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
     height=500,
     transition_duration=500)
+
+annotations = []
+
+annotations.append(dict(xref='paper', x=1.1, y=subset_vac['people_vaccinated'].max(),
+                        xanchor='right', yanchor='middle',
+                        text='{}%'.format(
+                            np.round(
+                                (subset_vac['people_vaccinated'].max() * 100) / full_df['population'].head(1).values[
+                                    0]), 2),
+                        font=dict(color='#CEF2D7'),
+                        showarrow=False))
+
+annotations.append(dict(xref='paper', x=1.1, y=subset_vac['people_fully_vaccinated'].max(),
+                        xanchor='right', yanchor='middle',
+                        text='{}%'.format(
+                            np.round((subset_vac['people_fully_vaccinated'].max() * 100) /
+                                     full_df['population'].head(1).values[
+                                         0]), 2),
+                        font=dict(color='#94BF36'),
+                        showarrow=False))
+
+annotations.append(dict(xref='paper', yref='paper',
+                        x=0, y=1.25,
+                        xanchor='left', yanchor='bottom',
+                        text='Percent of population vaccinated',
+                        font=dict(size=16,
+                                  color='#fff'),
+                        showarrow=False),
+                   )
+
+vaccination_trend.update_layout(annotations=annotations)
 
 ############################## infection rate after vaccination starts ####################
 infection_trend = go.Figure()
@@ -137,23 +177,40 @@ infection_trend.update_layout(
                color='white',
                zeroline=False),
     yaxis=dict(title='Count',
-               gridcolor='#3B3659',
+               gridcolor='#404040',
                gridwidth=1,
                showline=False,
                color='white'),
-    legend=dict(font=dict(color='#fff')),
-    paper_bgcolor='#2A2D40',
-    plot_bgcolor='#2A2D40',
+    legend=dict(orientation='h',
+                yanchor='top',
+                xanchor='right',
+                x=1, y=1.15,
+                font=dict(color='#fff')),
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
     height=500,
     transition_duration=500)
+
+annotations = []
+
+annotations.append(dict(xref='paper', yref='paper',
+                        x=0, y=1.25,
+                        xanchor='left', yanchor='bottom',
+                        text='Daily averages as % of peak',
+                        font=dict(size=16,
+                                  color='#fff'),
+                        showarrow=False),
+                   )
+
+infection_trend.update_layout(annotations=annotations)
 
 ############################# layouts ###########################
 layout = html.Div([
     html.Div([
         html.H2(
             id='local-header',
-            children=f'Average number of new infections reported in Sri Lanka each day reaches new high: Now reporting more than '
-                     f'{int(np.rint(full_df["new_cases"].tail(7).mean()))} daily.'
+            children=f'Average number of new infections reported in Sri Lanka each day reaches new high: '
+                     f'Now reporting more than {int(np.rint(full_df["new_cases"].tail(7).mean()))} daily.'
         ),
         html.Div([
             dcc.Dropdown(
@@ -164,7 +221,8 @@ layout = html.Div([
                     {'label': 'all-time', 'value': 'all-time'}
                 ],
                 value='all-time',
-                style={'width': '76%', 'border-radius': '20px'}
+                style={'width': '76%',
+                       'border-radius': '20px'}
             ),
             dcc.Dropdown(
                 id='area-type-dropdown',
@@ -174,28 +232,39 @@ layout = html.Div([
                     {'label': 'total tests', 'value': 'total_tests'},
                 ],
                 value='total_cases',
-                style={'width': '76%', 'border-radius': '20px'}
+                style={'width': '76%',
+                       'border-radius': '20px'}
             )
         ],
-            style={'width': '30%', 'display': 'flex', 'justify-content': 'space-between'}),
+            style={'width': '30%',
+                   'display': 'flex',
+                   'justify-content': 'space-between'}),
         dcc.Graph(id='area-graph')
     ]),
-    html.Hr(className='section-divider',
-            style={'padding': '0 0', 'margin': '32px 0'}),
+    # html.Hr(className='section-divider',
+    #         style={'padding': '0 0', 'margin': '44px auto'}),
+    html.P(
+        dcc.Markdown(
+            f'There have been **{int(full_df["total_cases"].max())}** infections and **{int(full_df["total_deaths"].max())}** '
+            f'coronavirus-related deaths reported in the country since the pandemic began.'),
+        style={'width': '64%',
+               'margin': '44px auto',
+               'color': '#fff'}),
     html.Div([
-        html.P(
-            f'There have been {int(full_df["total_cases"].max())} infections and {int(full_df["total_deaths"].max())} '
-            f'coronavirus-related deaths reported in the country since the pandemic began.',
-            style={'width': '64%', 'margin': '0 auto', 'color': '#fff'}),
-        html.H3('Daily reported trends', style={'color': '#fff'}),
+        html.H3('Daily reported trends', style={'color': '#fff',
+                                                'margin': '44px auto',
+                                                'width': '64%'}),
         html.Div([
             html.Label('New infections', style={'color': '#fff'}),
             dcc.Graph(id='new-case-dist'),
-        ], style={'width': '50%', 'display': 'inline-block'}),
+        ], style={'width': '50%',
+                  'display': 'inline-block'}),
         html.Div([
             html.Label('Deaths', style={'color': '#fff'}),
             dcc.Graph(id='new-death-dist'),
-        ], style={'width': '50%', 'display': 'inline-block', 'float': 'right'}),
+        ], style={'width': '50%',
+                  'display': 'inline-block',
+                  'float': 'right'}),
         html.Div([
             dcc.Slider(
                 id='predict-for',
@@ -205,11 +274,23 @@ layout = html.Div([
                 marks={'0': 0, '7': 7, '14': 14, '21': 21, '28': 28},
                 step=None
             )
-        ], style={'width': '50%', 'margin': '0 auto'})
+        ], style={'width': '50%',
+                  'margin': '0 auto'})
     ]),
-    html.Hr(className='section-divider',
-            style={'padding': '0 0', 'margin': '32px 0'}),
+    # html.Hr(className='section-divider',
+    #         style={'padding': '0 0', 'margin': '44px auto'}),
     html.Div([
+        html.H3('Vaccination', style={'color': '#fff',
+                                      'margin': '44px auto',
+                                      'width': '64%'}),
+        html.P(
+            dcc.Markdown(
+                f'Sri Lanka has administered at least **{int(full_df["people_vaccinated"].max())}**'
+                f' doses of COVID vaccines so far. Assuming every person needs 2 doses, that’s enough to have vaccinated about '
+                f'**{np.round((full_df["people_vaccinated"].max() * 100) / (2 * full_df["population"].head(1).values[0]), 3)}%** of the country’s population.',
+                style={'color': '#fff',
+                       'margin': '44px auto',
+                       'width': '64%'})),
         html.Div([html.P(),
                   dcc.Graph(id='vac-area',
                             figure=vaccination_trend)], style={'width': '50%',
@@ -219,9 +300,25 @@ layout = html.Div([
                             figure=infection_trend)], style={'width': '50%',
                                                              'float': 'right',
                                                              'display': 'inline-block'}),
-        html.Div([html.P(),
-                  dcc.Graph(id='vac-prog',
-                            figure=vaccination_progress)], style={'width': '50%',
-                                                                  'margin': '0 auto'})
+        html.Div([
+            html.P(
+                dcc.Markdown(
+                    f'During the last week reported, Sri Lanka averaged about '
+                    f'**{current_rate}** doses administered '
+                    f'each day. At that rate, it will take a further **{int(np.rint(full_df["population"].head(1) * 0.1 / current_rate))}** days to administer enough doses '
+                    f'for another **{10}%** of the population.'),
+                style={'width': '64%',
+                       'margin': '44px auto'}),
+            html.P(
+                dcc.Markdown(
+                    f'It is going at a rate of about **{int(np.rint(np.mean(full_df["new_vaccinations"].tail(7))))}** '
+                    f'doses per day during the last week which is about **{np.round(vaccination_lag, 3)}%** '
+                    f'slower than its fastest 7-day pace.'),
+                style={'width': '64%',
+                       'margin': '44px auto'}),
+            dcc.Graph(id='vac-prog',
+                      figure=vaccination_progress)], style={'width': '80%',
+                                                            'height': '400px',
+                                                            'margin': '0 auto'})
     ]),
 ])

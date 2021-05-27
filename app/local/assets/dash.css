@@ -1,6 +1,6 @@
 body {
     width: 76%;
-    background-color: #2A2D40;
+    background-color: #262625;
     font-family: Arial, sans-serif;
     margin: 0 auto;
     padding: 0;
@@ -8,15 +8,19 @@ body {
 }
 
 .Select-control {
-    background-color: #2A2D40;
+    background-color: #262625;
 }
 
 div#area-dropdown {
-    background-color: #2A2D40;
+    background-color: #262625;
 }
 
 .has-value.Select--single > .Select-control .Select-value .Select-value-label, .has-value.is-pseudo-focused.Select--single > .Select-control .Select-value .Select-value-label {
     color: #ffffff;
+}
+
+hr {
+    width: 64%;
 }
 
 h2#local-header {
@@ -26,4 +30,9 @@ h2#local-header {
     color: #fff;
     font-weight: lighter;
     border-left: 8px solid #7BA65D;
+}
+
+h1, h2, h3, h4, p {
+    letter-spacing: 0.5px;
+    color: #CBCCCF;
 }
