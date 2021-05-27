@@ -14,11 +14,12 @@ span = subset_vac.shape[0] / subset_vac['date'].dt.month.nunique()
 subset_vac['EMA'] = subset_vac.loc[:, 'new_vaccinations'].ewm(span=span, adjust=False).mean()
 current_rate = subset_vac.tail(1).EMA.values[0]
 vaccinated_pop = full_df['total_vaccinations'].max()
-vaccination_by_7days = full_df[full_df['date'] > '2021-01-24'][['date', 'new_vaccinations']].resample('7D',
-                                                                                                      on='date').mean()
+vaccination_by_7days = \
+    full_df[full_df['date'] > '2021-01-24'][['date', 'new_vaccinations']].resample('7D', on='date').agg(
+        {'max', 'min', 'mean'})['new_vaccinations']
 vaccination_lag = np.abs(
-    vaccination_by_7days["new_vaccinations"].tail(1).values[0] - vaccination_by_7days["new_vaccinations"].max())
-vaccination_lag = vaccination_lag * 100 / vaccination_by_7days["new_vaccinations"].max()
+    vaccination_by_7days["mean"].tail(1).values[0] - vaccination_by_7days["mean"].max())
+vaccination_lag = vaccination_lag * 100 / vaccination_by_7days["mean"].max()
 
 to_vaccinate_by_portion = full_df['population'].head(1).values[0] * np.asarray(
     [0.1, 0.5, 0.73, 1]) - vaccinated_pop
@@ -204,7 +205,88 @@ annotations.append(dict(xref='paper', yref='paper',
 
 infection_trend.update_layout(annotations=annotations)
 
-############################# layouts ###########################
+############################# vaccination efficeincy #########################
+vaccination_eff = go.Figure()
+vaccination_eff.add_trace(
+    go.Bar(x=vaccination_by_7days.index,
+           y=vaccination_by_7days['min'],
+           name='minimum',
+           marker=dict(color='#ADBF1F'))
+)
+vaccination_eff.add_trace(
+    go.Bar(x=vaccination_by_7days.index,
+           y=vaccination_by_7days['mean'],
+           name='average',
+           marker=dict(color='#537345'))
+)
+vaccination_eff.add_trace(
+    go.Bar(x=vaccination_by_7days.index,
+           y=vaccination_by_7days['max'],
+           name='maximum',
+           marker=dict(color='#2F591C'))
+)
+
+vaccination_eff.update_layout(
+    title=dict(text='Weekly vaccinated Avg. change',
+               font=dict(color='#fff')),
+    xaxis=dict(title='Date',
+               showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(title='Change',
+               gridcolor='#404040',
+               gridwidth=1,
+               showline=False,
+               color='white'),
+    legend=dict(orientation='h',
+                yanchor='top',
+                xanchor='right',
+                x=1, y=1.09,
+                font=dict(color='#fff')),
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=500,
+    transition_duration=500)
+
+############################# new vaccinations by day ########################
+
+vaccination_day = go.Figure()
+vaccination_day.add_trace(
+    go.Bar(x=subset_vac['date'],
+           y=subset_vac['new_vaccinations'],
+           marker=dict(line=dict(width=0),
+                       color='#515559'),
+           )
+)
+vaccination_day.add_trace(
+    go.Scatter(x=subset_vac['date'],
+               y=subset_vac['new_vaccinations'],
+               mode='lines',
+               line=dict(color='#F2CE16', width=2.5)
+               )
+)
+
+vaccination_day.update_layout(
+    title=dict(text='New vaccinations',
+               font=dict(color='#fff')),
+    xaxis=dict(title='Date',
+               showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(title='Change',
+               gridcolor='#404040',
+               gridwidth=1,
+               showline=False,
+               color='white'),
+    showlegend=False,
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=500,
+    transition_duration=500)
+
+############################# layouts ########################################
 layout = html.Div([
     html.Div([
         html.H2(
@@ -304,7 +386,7 @@ layout = html.Div([
             html.P(
                 dcc.Markdown(
                     f'During the last week reported, Sri Lanka averaged about '
-                    f'**{current_rate}** doses administered '
+                    f'**{int(np.rint(current_rate))}** doses administered '
                     f'each day. At that rate, it will take a further **{int(np.rint(full_df["population"].head(1) * 0.1 / current_rate))}** days to administer enough doses '
                     f'for another **{10}%** of the population.'),
                 style={'width': '64%',
@@ -318,7 +400,19 @@ layout = html.Div([
                        'margin': '44px auto'}),
             dcc.Graph(id='vac-prog',
                       figure=vaccination_progress)], style={'width': '80%',
-                                                            'height': '400px',
                                                             'margin': '0 auto'})
     ]),
+    html.Div([
+        html.Div([
+            dcc.Graph(id='vaccination-eff',
+                      figure=vaccination_eff)
+        ], style={'width': '50%',
+                  'display': 'inline-block'}),
+        html.Div([
+            dcc.Graph(id='new-vaccination-by-day',
+                      figure=vaccination_day)
+        ], style={'width': '50%',
+                  'float': 'right',
+                  'display': 'inline-block'})
+    ])
 ])
