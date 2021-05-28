@@ -7,6 +7,7 @@ import datetime
 
 full_df = pd.read_pickle('app/data/sl_full_cleaned.pkl')
 subset_vac = full_df[full_df['new_vaccinations'] > 0]
+district_data = pd.read_csv('app/data/disdrict distribution.csv')
 
 ############################## vaccination progress #######################################
 
@@ -418,7 +419,8 @@ layout = html.Div([
     html.Div([
         html.Div([
             dcc.Graph(id='district_bubble')
-        ]),
+        ], style={'width': '80%',
+                  'display': 'inline-block'}),
         html.Div([
             dcc.Dropdown(id='dist-year-dropdown',
                          options=[
@@ -430,33 +432,18 @@ layout = html.Div([
                                 'border-radius': '20px'}
                          ),
             dcc.Dropdown(id='dist-month-dropdown',
-                         options=[
-                             {'label': 'January', 'value': 1},
-                             {'label': 'February', 'value': 2},
-                             {'label': 'March', 'value': 3},
-                             {'label': 'April', 'value': 4},
-                             {'label': 'May', 'value': 5},
-                             {'label': 'June', 'value': 6},
-                             {'label': 'July', 'value': 7},
-                             {'label': 'August', 'value': 8},
-                             {'label': 'September', 'value': 9},
-                             {'label': 'October', 'value': 10},
-                             {'label': 'November', 'value': 11},
-                             {'label': 'December', 'value': 12},
-                         ],
+                         options=[],
                          value=0,
                          style={'width': '76%',
                                 'border-radius': '20px'}),
-            dcc.Dropdown(id='dist-week-dropdown',
-                         options=[
-                             {'label': 'week 1', 'value': 1},
-                             {'label': 'week 2', 'value': 2},
-                             {'label': 'week 3', 'value': 3},
-                             {'label': 'week 4', 'value': 4}
-                         ],
-                         value=0,
+            dcc.Dropdown(id='dist-district-dropdown',
+                         options=[{'label': dist, 'value': dist} for dist in
+                                  district_data.select_dtypes(include=np.number).columns],
+                         value='COLOMBO',
                          style={'width': '76%',
                                 'border-radius': '20px'})
-        ])
+        ], style={'width': '20%',
+                  'display': 'inline-block',
+                  'float': 'right'})
     ])
 ])

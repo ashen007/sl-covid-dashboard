@@ -3,6 +3,7 @@ import warnings
 from dash.dependencies import Input
 from dash.dependencies import Output
 import plotly.graph_objs as go
+import plotly.express as px
 import pandas as pd
 import datetime
 
@@ -10,6 +11,19 @@ import statsmodels.api as sm
 
 full_df = pd.read_pickle('app/data/sl_full_cleaned.pkl')
 subset_vac = full_df[full_df['new_vaccinations'] > 0]
+district_data = pd.read_csv('app/data/disdrict distribution.csv')
+district_data['Date'] = pd.to_datetime(district_data['Date'])
+district_data.rename(columns={'Date': 'date'}, inplace=True)
+dist = pd.merge(right=full_df[full_df['date'] > '2020-03-31'][['date', 'new_tests', 'new_cases']],
+                left=district_data,
+                on='date')
+districts = dist.select_dtypes(include=np.number).columns[:-2]
+
+for district in districts:
+    dist[district] = dist[district].diff()
+    dist[district].fillna(value=0, inplace=True)
+
+dist.drop(np.where(dist['COLOMBO'] == dist['COLOMBO'].max())[0][0], inplace=True)
 
 
 def register_callbacks(dash_app):
@@ -171,14 +185,97 @@ def register_callbacks(dash_app):
 
         return fig
 
-    # @dash_app.callback(Output('vac-lines', 'figure'))
-    # def vaccination_progress():
-    #
-    #
-    #     return fig
-    #
-    # @dash_app.callback(Output('vac-area', 'figure'))
-    # def vaccination_area():
+    @dash_app.callback(Output('district_bubble', 'figure'),
+                       Input('dist-year-dropdown', 'value'),
+                       Input('dist-month-dropdown', 'value'),
+                       Input('dist-district-dropdown', 'value'))
+    def district_distribution(year, month, select_district):
+        if (isinstance(year, str)) & (year is not None):
+            year = int(year)
+        if (isinstance(month, str)) & (month is not None):
+            month = int(month)
 
-    #
-    #     return fig
+        if year is None:
+            year = 0
+        if month is None:
+            month = 0
+
+        hover_text = []
+
+        part_1 = dist[['date', 'new_cases', 'new_tests']]
+        part_2 = dist.drop(['date', 'new_cases', 'new_tests'], axis=1)
+        temp = pd.concat([part_1, np.abs(part_2[select_district])], axis=1)
+
+        for index, row in temp.iterrows():
+            hover_text.append(('Date:{date}<br>' +
+                               'new cases:{new_ca}<br>' +
+                               'new cases for island wide:{new_ca_is}<br>' +
+                               'test done:{new_ts}').format(date=row['date'],
+                                                            new_ca=row[select_district],
+                                                            new_ca_is=row['new_cases'],
+                                                            new_ts=row['new_tests']
+                                                            ))
+        temp['text'] = hover_text
+
+        if year == 0 & month == 0:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=temp['new_cases'], y=temp[select_district],
+                                     name=select_district,
+                                     mode='markers', marker=dict(size=np.sqrt(np.abs(temp[select_district])),
+                                                                 color=temp['new_tests'],
+                                                                 colorscale='speed'),
+                                     text=temp['text']))
+
+        if year != 0:
+            if month != 0:
+                fig = go.Figure()
+                fig.add_trace(
+                    go.Scatter(x=temp[(temp['date'].dt.year == year) & (temp['date'].dt.month == month)]['new_cases'],
+                               y=temp[(temp['date'].dt.year == year) & (temp['date'].dt.month == month)][
+                                   select_district],
+                               name=select_district,
+                               mode='markers',
+                               marker=dict(size=np.sqrt(np.abs(
+                                   temp[(temp['date'].dt.year == year) & (temp['date'].dt.month == month)][
+                                       select_district])),
+                                   color=
+                                   temp[(temp['date'].dt.year == year) & (temp['date'].dt.month == month)][
+                                       'new_tests'],
+                                   colorscale='speed'),
+                               text=temp[(temp['date'].dt.year == year) & (temp['date'].dt.month == month)]['text']))
+            elif month == 0:
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=temp[temp['date'].dt.year == year]['new_cases'],
+                                         y=temp[temp['date'].dt.year == year][select_district],
+                                         name=select_district,
+                                         mode='markers',
+                                         marker=dict(
+                                             size=np.sqrt(np.abs(temp[temp['date'].dt.year == year][select_district])),
+                                             color=temp[temp['date'].dt.year == year]['new_tests'],
+                                             colorscale='speed'),
+                                         text=temp[temp['date'].dt.year == year]['text']))
+
+        fig.update_layout(
+            xaxis=dict(title='new cases island wide',
+                       showgrid=False,
+                       showline=False,
+                       color='white',
+                       zeroline=False),
+            yaxis=dict(title=f'new cases in {select_district}',
+                       gridcolor='#404040',
+                       gridwidth=1,
+                       showline=False,
+                       color='white'),
+            legend=dict(font=dict(color='#fff')),
+            paper_bgcolor='#262625',
+            plot_bgcolor='#262625',
+            height=750,
+            transition_duration=500)
+
+        return fig
+
+    @dash_app.callback(Output('dist-month-dropdown', 'options'),
+                       Input('dist-year-dropdown', 'value'))
+    def update_month(year):
+        return [{'label': i, 'value': i} for i in
+                district_data[district_data['date'].dt.year == year]['date'].dt.month.unique()]
