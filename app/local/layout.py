@@ -414,5 +414,49 @@ layout = html.Div([
         ], style={'width': '50%',
                   'float': 'right',
                   'display': 'inline-block'})
+    ]),
+    html.Div([
+        html.Div([
+            dcc.Graph(id='district_bubble')
+        ]),
+        html.Div([
+            dcc.Dropdown(id='dist-year-dropdown',
+                         options=[
+                             {'label': '2020', 'value': 2020},
+                             {'label': '2021', 'value': 2021},
+                         ],
+                         value=0,
+                         style={'width': '76%',
+                                'border-radius': '20px'}
+                         ),
+            dcc.Dropdown(id='dist-month-dropdown',
+                         options=[
+                             {'label': 'January', 'value': 1},
+                             {'label': 'February', 'value': 2},
+                             {'label': 'March', 'value': 3},
+                             {'label': 'April', 'value': 4},
+                             {'label': 'May', 'value': 5},
+                             {'label': 'June', 'value': 6},
+                             {'label': 'July', 'value': 7},
+                             {'label': 'August', 'value': 8},
+                             {'label': 'September', 'value': 9},
+                             {'label': 'October', 'value': 10},
+                             {'label': 'November', 'value': 11},
+                             {'label': 'December', 'value': 12},
+                         ],
+                         value=0,
+                         style={'width': '76%',
+                                'border-radius': '20px'}),
+            dcc.Dropdown(id='dist-week-dropdown',
+                         options=[
+                             {'label': 'week 1', 'value': 1},
+                             {'label': 'week 2', 'value': 2},
+                             {'label': 'week 3', 'value': 3},
+                             {'label': 'week 4', 'value': 4}
+                         ],
+                         value=0,
+                         style={'width': '76%',
+                                'border-radius': '20px'})
+        ])
     ])
 ])
