@@ -223,7 +223,7 @@ def register_callbacks(dash_app):
                                      name=select_district,
                                      mode='markers', marker=dict(size=np.sqrt(np.abs(temp[select_district])),
                                                                  color=temp['new_tests'],
-                                                                 colorscale='speed'),
+                                                                 colorscale='PiYG'),
                                      text=temp['text']))
 
         if year != 0:
@@ -241,7 +241,7 @@ def register_callbacks(dash_app):
                                    color=
                                    temp[(temp['date'].dt.year == year) & (temp['date'].dt.month == month)][
                                        'new_tests'],
-                                   colorscale='speed'),
+                                   colorscale='PiYG'),
                                text=temp[(temp['date'].dt.year == year) & (temp['date'].dt.month == month)]['text']))
             elif month == 0:
                 fig = go.Figure()
@@ -252,7 +252,7 @@ def register_callbacks(dash_app):
                                          marker=dict(
                                              size=np.sqrt(np.abs(temp[temp['date'].dt.year == year][select_district])),
                                              color=temp[temp['date'].dt.year == year]['new_tests'],
-                                             colorscale='speed'),
+                                             colorscale='PiYG'),
                                          text=temp[temp['date'].dt.year == year]['text']))
 
         fig.update_layout(
