@@ -334,6 +334,31 @@ cluster_duration.update_layout(
     transition_duration=500,
     margin=dict(l=10))
 
+############################# total cases of each clusters ###################
+cluster_cases = go.Figure(go.Pie(labels=time_line['cluster'],
+                                 values=np.sqrt(time_line['cases']),
+                                 textinfo='label+percent',
+                                 outsidetextfont=dict(color='#fff'),
+                                 insidetextorientation='radial',
+                                 marker_colors=px.colors.sequential.speed))
+cluster_cases.update_layout(
+    title=dict(text='Clusters & total cases',
+               font=dict(color='#fff')),
+    xaxis=dict(showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(showgrid=False,
+               showline=False,
+               color='white'),
+    showlegend=False,
+    coloraxis_showscale=False,
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=500,
+    transition_duration=500,
+    margin=dict(l=10))
+
 ############################# layouts ########################################
 layout = html.Div([
     html.Div([
@@ -503,7 +528,7 @@ layout = html.Div([
         ], style={'width': '60%', 'display': 'inline-block'}),
         html.Div([
             dcc.Graph(id='cluster-proportion',
-                      )
+                      figure=cluster_cases)
         ], style={'width': '40%', 'display': 'inline-block', 'float': 'right'})
     ])
 ])
