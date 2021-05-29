@@ -3,6 +3,7 @@ import dash_html_components as html
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
+import plotly.express as px
 import datetime
 
 full_df = pd.read_pickle('app/data/sl_full_cleaned.pkl')
@@ -287,6 +288,52 @@ vaccination_day.update_layout(
     height=500,
     transition_duration=500)
 
+############################# clusters duration ##############################
+cluster_duration = go.Figure()
+
+time_line = pd.DataFrame([
+    dict(cluster='Random and Returned <br>from other countries',
+         start='2020-05-01', end='2021-05-18', cases=4400,
+         text=f'name:Random and Returned <br>from other countries<br>start:2020-05-01<br>end:2021-05-18<br>cases:4400'),
+    dict(cluster='Navy Personal and <br>their close contacts',
+         start='2020-05-01', end='2020-07-11', cases=1057,
+         text=f'name:Navy Personal and <br>their close contacts<br>start:2020-05-01<br>end:2020-07-11<br>cases:1057'),
+    dict(cluster='Kandakadu cluster & <br>their close contacts',
+         start='2020-07-16', end='2020-09-23', cases=651,
+         text=f'name:Kandakadu cluster & <br>their close contacts<br>start:2020-07-16<br>end:2020-09-23<br>cases:651'),
+    dict(cluster='Brandix Minuwangoda', start='2020-10-05',
+         end='2021-05-18', cases=98282,
+         text=f'name:Brandix Minuwangoda<br>start:2021-05-18<br>end:2020-10-05<br>cases:98282'),
+    dict(cluster='3rd wave (new year)', start='2021-04-28',
+         end='2021-05-18', cases=47775,
+         text=f'name:3rd wave (new year)<br>start:2021-05-18<br>end:2021-04-28<br>cases:47775')
+])
+
+cluster_duration = px.timeline(time_line,
+                               x_start='start', x_end='end', y='cluster',
+                               color=np.log(time_line['cases']), color_continuous_scale=px.colors.sequential.speed,
+                               hover_data=['cluster', 'start', 'end', 'cases'])
+cluster_duration.update_yaxes(autorange='reversed')
+cluster_duration.update_layout(
+    title=dict(text='Clusters & active period',
+               font=dict(color='#fff')),
+    xaxis=dict(title='Date',
+               showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(gridcolor='#404040',
+               gridwidth=1,
+               showline=False,
+               color='white'),
+    showlegend=False,
+    coloraxis_showscale=False,
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=500,
+    transition_duration=500,
+    margin=dict(l=10))
+
 ############################# layouts ########################################
 layout = html.Div([
     html.Div([
@@ -429,21 +476,34 @@ layout = html.Div([
                          ],
                          value=0,
                          style={'width': '76%',
-                                'border-radius': '20px'}
+                                'border-radius': '20px',
+                                'margin-top': '12px'}
                          ),
             dcc.Dropdown(id='dist-month-dropdown',
                          options=[],
                          value=0,
                          style={'width': '76%',
-                                'border-radius': '20px'}),
+                                'border-radius': '20px',
+                                'margin-top': '12px'}),
             dcc.Dropdown(id='dist-district-dropdown',
                          options=[{'label': dist, 'value': dist} for dist in
                                   district_data.select_dtypes(include=np.number).columns],
                          value='COLOMBO',
                          style={'width': '76%',
-                                'border-radius': '20px'})
+                                'border-radius': '20px',
+                                'margin-top': '12px'})
         ], style={'width': '20%',
                   'display': 'inline-block',
                   'float': 'right'})
+    ]),
+    html.Div([
+        html.Div([
+            dcc.Graph(id='cluster-duration',
+                      figure=cluster_duration)
+        ], style={'width': '60%', 'display': 'inline-block'}),
+        html.Div([
+            dcc.Graph(id='cluster-proportion',
+                      )
+        ], style={'width': '40%', 'display': 'inline-block', 'float': 'right'})
     ])
 ])

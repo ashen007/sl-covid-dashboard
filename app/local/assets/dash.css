@@ -36,8 +36,3 @@ h1, h2, h3, h4, p {
     letter-spacing: 0.5px;
     color: #CBCCCF;
 }
-
-#dist-year-dropdown, #dist-month-dropdown, #dist-district-dropdown {
-    margin-bottom: 12px;
-    margin-top: 12px;
-}
