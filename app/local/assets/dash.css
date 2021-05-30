@@ -15,6 +15,11 @@ div#area-dropdown {
     background-color: #262625;
 }
 
+.updatemenu-item-rect {
+    fill: #262625 !important;
+    border-radius: 20px !important;
+}
+
 .has-value.Select--single > .Select-control .Select-value .Select-value-label, .has-value.is-pseudo-focused.Select--single > .Select-control .Select-value .Select-value-label {
     color: #ffffff;
 }

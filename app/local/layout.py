@@ -369,15 +369,48 @@ for col in cluster.select_dtypes(include=np.number).columns:
     cluster[col] = np.abs(cluster[col])
 cluster.set_index('Date', inplace=True)
 cluster_graw_rate = cluster.ewm(span=7, adjust=False).mean()
+cluster_graw_rate.reset_index(inplace=True)
+cluster_graw_rate.rename(columns={'index': 'date'}, inplace=True)
+cluster_graw_rate['Date'] = pd.to_datetime(cluster_graw_rate['Date'])
 line_colors = ['#95A617', '#3FA663', '#2D7345', '#25594A', '#3391A6']
 
-for i in range(cluster_graw_rate.shape[1]):
-    cluster_grow.add_trace(go.Scatter(x=pd.to_datetime(cluster_graw_rate.index),
-                                      y=cluster_graw_rate[cluster_graw_rate.columns[i]],
-                                      name=cluster_graw_rate.columns[i],
-                                      line=dict(color=line_colors[i],
-                                                width=3.2),
-                                      connectgaps=True))
+cluster_grow = go.Figure(
+    layout=go.Layout(updatemenus=[dict(type='buttons',
+                                       direction='left',
+                                       pad={'r': 10, 't': 87},
+                                       x=0.1,
+                                       xanchor='right',
+                                       y=0,
+                                       yanchor='top',
+                                       )],
+                     xaxis=dict(range=[cluster_graw_rate['Date'].min(), cluster_graw_rate['Date'].max()],
+                                autorange=False, title_text='date'),
+                     yaxis=dict(range=[0, 3000], autorange=True, title_text='change'))
+)
+
+init = 0
+
+for i in range(1, cluster_graw_rate.shape[1]):
+    cluster_grow.add_trace(
+        go.Scatter(x=[cluster_graw_rate.loc[init, 'Date']],
+                   y=[cluster_graw_rate.loc[init, cluster_graw_rate.columns[i]]],
+                   name=cluster_graw_rate.columns[i],
+                   mode='lines', line=dict(color=line_colors[i - 1],
+                                           width=3.2))
+    )
+
+cluster_grow.update(frames=[go.Frame(data=[go.Scatter(x=cluster_graw_rate.loc[:k, 'Date'],
+                                                      y=cluster_graw_rate.loc[:k, col]) for col in
+                                           cluster_graw_rate.columns[1:]]) for k in
+                            range(init + 1, cluster_graw_rate.shape[0], 5)])
+
+cluster_grow.update_layout(updatemenus=[dict(buttons=list([dict(label='play',
+                                                                method='animate',
+                                                                args=[None, {'frame': {'duration': 300}}])]),
+                                             font=dict(size=16,
+                                                       color='#fff'),
+                                             bordercolor='#fff'
+                                             )])
 cluster_grow.update_layout(
     title=dict(text='Cluster growing rate',
                font=dict(color='#fff')),
@@ -394,8 +427,7 @@ cluster_grow.update_layout(
     legend=dict(font=dict(color='#fff')),
     paper_bgcolor='#262625',
     plot_bgcolor='#262625',
-    height=500,
-    transition_duration=500)
+    height=500)
 
 ############################# layouts ########################################
 layout = html.Div([
