@@ -338,6 +338,7 @@ cluster_duration.update_layout(
 cluster_cases = go.Figure(go.Pie(labels=time_line['cluster'],
                                  values=np.sqrt(time_line['cases']),
                                  textinfo='label+percent',
+                                 text=time_line['text'],
                                  outsidetextfont=dict(color='#fff'),
                                  insidetextorientation='radial',
                                  marker_colors=px.colors.sequential.speed))
@@ -358,6 +359,43 @@ cluster_cases.update_layout(
     height=500,
     transition_duration=500,
     margin=dict(l=10))
+
+############################# cluster grow ###################################
+cluster_grow = go.Figure()
+cluster = pd.read_csv('app/data/clusters.csv')
+for col in cluster.select_dtypes(include=np.number).columns:
+    cluster[col] = cluster[col].diff()
+    cluster[col].fillna(value=0, inplace=True)
+    cluster[col] = np.abs(cluster[col])
+cluster.set_index('Date', inplace=True)
+cluster_graw_rate = cluster.ewm(span=7, adjust=False).mean()
+line_colors = ['#95A617', '#3FA663', '#2D7345', '#25594A', '#3391A6']
+
+for i in range(cluster_graw_rate.shape[1]):
+    cluster_grow.add_trace(go.Scatter(x=pd.to_datetime(cluster_graw_rate.index),
+                                      y=cluster_graw_rate[cluster_graw_rate.columns[i]],
+                                      name=cluster_graw_rate.columns[i],
+                                      line=dict(color=line_colors[i],
+                                                width=3.2),
+                                      connectgaps=True))
+cluster_grow.update_layout(
+    title=dict(text='Cluster growing rate',
+               font=dict(color='#fff')),
+    xaxis=dict(title='Date',
+               showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(title='Change',
+               gridcolor='#404040',
+               gridwidth=1,
+               showline=False,
+               color='white'),
+    legend=dict(font=dict(color='#fff')),
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=500,
+    transition_duration=500)
 
 ############################# layouts ########################################
 layout = html.Div([
@@ -530,5 +568,9 @@ layout = html.Div([
             dcc.Graph(id='cluster-proportion',
                       figure=cluster_cases)
         ], style={'width': '40%', 'display': 'inline-block', 'float': 'right'})
+    ]),
+    html.Div([
+        dcc.Graph(id='cluster-growing-rate',
+                  figure=cluster_grow)
     ])
 ])
