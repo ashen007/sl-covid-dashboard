@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 import datetime
 
 full_df = pd.read_pickle('app/data/sl_full_cleaned.pkl')
@@ -429,6 +430,63 @@ cluster_grow.update_layout(
     plot_bgcolor='#262625',
     height=500)
 
+############################# trace radar ####################################
+first_wave = ['2020-03-11', '2020-09-23']
+second_wave = ['2020-10-05', '2021-04-01']
+third_wave = ['2021-04-28', '2021-05-17']
+categories = ['total_cases', 'total_deaths', 'hosp_patients', 'total_tests']
+
+first_wave = full_df[(full_df['date'] >= first_wave[0]) & (full_df['date'] <= first_wave[1])]
+second_wave = full_df[(full_df['date'] >= second_wave[0]) & (full_df['date'] <= second_wave[1])]
+third_wave = full_df[(full_df['date'] >= third_wave[0]) & (full_df['date'] <= third_wave[1])]
+first_wave_stats = [np.max(first_wave[x]) for x in first_wave[categories]]
+second_wave_stats = [np.max(second_wave[x]) for x in second_wave[categories]]
+third_wave_stats = [np.max(third_wave[x]) for x in third_wave[categories]]
+
+trace_radar = make_subplots(rows=1, cols=3,
+                            specs=[[{'type': 'polar'}, {'type': 'polar'}, {'type': 'polar'}]]
+                            )
+stats = [first_wave_stats, second_wave_stats, third_wave_stats]
+names = ['first wave', 'second wave', 'third wave']
+
+for i in range(len(stats)):
+    trace_radar.add_trace(go.Scatterpolar(r=np.power(stats[i], 1 / 5),
+                                          theta=categories,
+                                          fill='toself',
+                                          fillcolor=line_colors[i],
+                                          opacity=0.5,
+                                          textfont=dict(color='#fff'),
+                                          line=dict(color=line_colors[i]),
+                                          name=names[i]),
+                          row=1, col=i + 1)
+
+trace_radar.update_polars(radialaxis=dict(color='#fff'),
+                          angularaxis=dict(color='#fff'))
+
+trace_radar.update_layout(
+    polar=dict(radialaxis=dict(visible=True,
+                               gridcolor='#404040',
+                               ),
+               bgcolor='#262625',
+               ),
+    polar2=dict(radialaxis=dict(visible=True,
+                                gridcolor='#404040',
+                                ),
+                bgcolor='#262625',
+                ),
+    polar3=dict(radialaxis=dict(visible=True,
+                                gridcolor='#404040',
+                                ),
+                bgcolor='#262625',
+                ),
+    title=dict(text='Waves',
+               font=dict(color='#fff')),
+    legend=dict(font=dict(color='#fff')),
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=450
+)
+
 ############################# layouts ########################################
 layout = html.Div([
     html.Div([
@@ -604,5 +662,9 @@ layout = html.Div([
     html.Div([
         dcc.Graph(id='cluster-growing-rate',
                   figure=cluster_grow)
+    ]),
+    html.Div([
+        dcc.Graph(id='wave-trace',
+                  figure=trace_radar)
     ])
 ])
