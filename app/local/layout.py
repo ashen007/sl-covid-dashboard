@@ -3,10 +3,13 @@ import dash_html_components as html
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
+import plotly.express as px
+from plotly.subplots import make_subplots
 import datetime
 
 full_df = pd.read_pickle('app/data/sl_full_cleaned.pkl')
 subset_vac = full_df[full_df['new_vaccinations'] > 0]
+district_data = pd.read_csv('app/data/disdrict distribution.csv')
 
 ############################## vaccination progress #######################################
 
@@ -14,11 +17,12 @@ span = subset_vac.shape[0] / subset_vac['date'].dt.month.nunique()
 subset_vac['EMA'] = subset_vac.loc[:, 'new_vaccinations'].ewm(span=span, adjust=False).mean()
 current_rate = subset_vac.tail(1).EMA.values[0]
 vaccinated_pop = full_df['total_vaccinations'].max()
-vaccination_by_7days = full_df[full_df['date'] > '2021-01-24'][['date', 'new_vaccinations']].resample('7D',
-                                                                                                      on='date').mean()
+vaccination_by_7days = \
+    full_df[full_df['date'] > '2021-01-24'][['date', 'new_vaccinations']].resample('7D', on='date').agg(
+        {'max', 'min', 'mean'})['new_vaccinations']
 vaccination_lag = np.abs(
-    vaccination_by_7days["new_vaccinations"].tail(1).values[0] - vaccination_by_7days["new_vaccinations"].max())
-vaccination_lag = vaccination_lag * 100 / vaccination_by_7days["new_vaccinations"].max()
+    vaccination_by_7days["mean"].tail(1).values[0] - vaccination_by_7days["mean"].max())
+vaccination_lag = vaccination_lag * 100 / vaccination_by_7days["mean"].max()
 
 to_vaccinate_by_portion = full_df['population'].head(1).values[0] * np.asarray(
     [0.1, 0.5, 0.73, 1]) - vaccinated_pop
@@ -204,7 +208,286 @@ annotations.append(dict(xref='paper', yref='paper',
 
 infection_trend.update_layout(annotations=annotations)
 
-############################# layouts ###########################
+############################# vaccination efficeincy #########################
+vaccination_eff = go.Figure()
+vaccination_eff.add_trace(
+    go.Bar(x=vaccination_by_7days.index,
+           y=vaccination_by_7days['min'],
+           name='minimum',
+           marker=dict(color='#ADBF1F'))
+)
+vaccination_eff.add_trace(
+    go.Bar(x=vaccination_by_7days.index,
+           y=vaccination_by_7days['mean'],
+           name='average',
+           marker=dict(color='#537345'))
+)
+vaccination_eff.add_trace(
+    go.Bar(x=vaccination_by_7days.index,
+           y=vaccination_by_7days['max'],
+           name='maximum',
+           marker=dict(color='#2F591C'))
+)
+
+vaccination_eff.update_layout(
+    title=dict(text='Weekly vaccinated Avg. change',
+               font=dict(color='#fff')),
+    xaxis=dict(title='Date',
+               showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(title='Change',
+               gridcolor='#404040',
+               gridwidth=1,
+               showline=False,
+               color='white'),
+    legend=dict(orientation='h',
+                yanchor='top',
+                xanchor='right',
+                x=1, y=1.09,
+                font=dict(color='#fff')),
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=500,
+    transition_duration=500)
+
+############################# new vaccinations by day ########################
+
+vaccination_day = go.Figure()
+vaccination_day.add_trace(
+    go.Bar(x=subset_vac['date'],
+           y=subset_vac['new_vaccinations'],
+           marker=dict(line=dict(width=0),
+                       color='#515559'),
+           )
+)
+vaccination_day.add_trace(
+    go.Scatter(x=subset_vac['date'],
+               y=subset_vac['new_vaccinations'],
+               mode='lines',
+               line=dict(color='#F2CE16', width=2.5)
+               )
+)
+
+vaccination_day.update_layout(
+    title=dict(text='New vaccinations',
+               font=dict(color='#fff')),
+    xaxis=dict(title='Date',
+               showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(title='Change',
+               gridcolor='#404040',
+               gridwidth=1,
+               showline=False,
+               color='white'),
+    showlegend=False,
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=500,
+    transition_duration=500)
+
+############################# clusters duration ##############################
+cluster_duration = go.Figure()
+
+time_line = pd.DataFrame([
+    dict(cluster='Random and Returned <br>from other countries',
+         start='2020-05-01', end='2021-05-18', cases=4400,
+         text=f'name:Random and Returned <br>from other countries<br>start:2020-05-01<br>end:2021-05-18<br>cases:4400'),
+    dict(cluster='Navy Personal and <br>their close contacts',
+         start='2020-05-01', end='2020-07-11', cases=1057,
+         text=f'name:Navy Personal and <br>their close contacts<br>start:2020-05-01<br>end:2020-07-11<br>cases:1057'),
+    dict(cluster='Kandakadu cluster & <br>their close contacts',
+         start='2020-07-16', end='2020-09-23', cases=651,
+         text=f'name:Kandakadu cluster & <br>their close contacts<br>start:2020-07-16<br>end:2020-09-23<br>cases:651'),
+    dict(cluster='Brandix Minuwangoda', start='2020-10-05',
+         end='2021-05-18', cases=98282,
+         text=f'name:Brandix Minuwangoda<br>start:2021-05-18<br>end:2020-10-05<br>cases:98282'),
+    dict(cluster='3rd wave (new year)', start='2021-04-28',
+         end='2021-05-18', cases=47775,
+         text=f'name:3rd wave (new year)<br>start:2021-05-18<br>end:2021-04-28<br>cases:47775')
+])
+
+cluster_duration = px.timeline(time_line,
+                               x_start='start', x_end='end', y='cluster',
+                               color=np.log(time_line['cases']), color_continuous_scale=px.colors.sequential.speed,
+                               hover_data=['cluster', 'start', 'end', 'cases'])
+cluster_duration.update_yaxes(autorange='reversed')
+cluster_duration.update_layout(
+    title=dict(text='Clusters & active period',
+               font=dict(color='#fff')),
+    xaxis=dict(title='Date',
+               showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(gridcolor='#404040',
+               gridwidth=1,
+               showline=False,
+               color='white'),
+    showlegend=False,
+    coloraxis_showscale=False,
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=500,
+    transition_duration=500,
+    margin=dict(l=10))
+
+############################# total cases of each clusters ###################
+cluster_cases = go.Figure(go.Pie(labels=time_line['cluster'],
+                                 values=np.sqrt(time_line['cases']),
+                                 textinfo='label+percent',
+                                 text=time_line['text'],
+                                 outsidetextfont=dict(color='#fff'),
+                                 insidetextorientation='radial',
+                                 marker_colors=px.colors.sequential.speed))
+cluster_cases.update_layout(
+    title=dict(text='Clusters & total cases',
+               font=dict(color='#fff')),
+    xaxis=dict(showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(showgrid=False,
+               showline=False,
+               color='white'),
+    showlegend=False,
+    coloraxis_showscale=False,
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=500,
+    transition_duration=500,
+    margin=dict(l=10))
+
+############################# cluster grow ###################################
+cluster_grow = go.Figure()
+cluster = pd.read_csv('app/data/clusters.csv')
+for col in cluster.select_dtypes(include=np.number).columns:
+    cluster[col] = cluster[col].diff()
+    cluster[col].fillna(value=0, inplace=True)
+    cluster[col] = np.abs(cluster[col])
+cluster.set_index('Date', inplace=True)
+cluster_graw_rate = cluster.ewm(span=7, adjust=False).mean()
+cluster_graw_rate.reset_index(inplace=True)
+cluster_graw_rate.rename(columns={'index': 'date'}, inplace=True)
+cluster_graw_rate['Date'] = pd.to_datetime(cluster_graw_rate['Date'])
+line_colors = ['#95A617', '#3FA663', '#2D7345', '#25594A', '#3391A6']
+
+cluster_grow = go.Figure(
+    layout=go.Layout(updatemenus=[dict(type='buttons',
+                                       direction='left',
+                                       pad={'r': 10, 't': 87},
+                                       x=0.1,
+                                       xanchor='right',
+                                       y=0,
+                                       yanchor='top',
+                                       )],
+                     xaxis=dict(range=[cluster_graw_rate['Date'].min(), cluster_graw_rate['Date'].max()],
+                                autorange=False, title_text='date'),
+                     yaxis=dict(range=[0, 3000], autorange=True, title_text='change'))
+)
+
+init = 0
+
+for i in range(1, cluster_graw_rate.shape[1]):
+    cluster_grow.add_trace(
+        go.Scatter(x=[cluster_graw_rate.loc[init, 'Date']],
+                   y=[cluster_graw_rate.loc[init, cluster_graw_rate.columns[i]]],
+                   name=cluster_graw_rate.columns[i],
+                   mode='lines', line=dict(color=line_colors[i - 1],
+                                           width=3.2))
+    )
+
+cluster_grow.update(frames=[go.Frame(data=[go.Scatter(x=cluster_graw_rate.loc[:k, 'Date'],
+                                                      y=cluster_graw_rate.loc[:k, col]) for col in
+                                           cluster_graw_rate.columns[1:]]) for k in
+                            range(init + 1, cluster_graw_rate.shape[0], 5)])
+
+cluster_grow.update_layout(updatemenus=[dict(buttons=list([dict(label='play',
+                                                                method='animate',
+                                                                args=[None, {'frame': {'duration': 300}}])]),
+                                             font=dict(size=16,
+                                                       color='#fff'),
+                                             bordercolor='#fff'
+                                             )])
+cluster_grow.update_layout(
+    title=dict(text='Cluster growing rate',
+               font=dict(color='#fff')),
+    xaxis=dict(title='Date',
+               showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(title='Change',
+               gridcolor='#404040',
+               gridwidth=1,
+               showline=False,
+               color='white'),
+    legend=dict(font=dict(color='#fff')),
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=500)
+
+############################# trace radar ####################################
+first_wave = ['2020-03-11', '2020-09-23']
+second_wave = ['2020-10-05', '2021-04-01']
+third_wave = ['2021-04-28', '2021-05-17']
+categories = ['total_cases', 'total_deaths', 'hosp_patients', 'total_tests']
+
+first_wave = full_df[(full_df['date'] >= first_wave[0]) & (full_df['date'] <= first_wave[1])]
+second_wave = full_df[(full_df['date'] >= second_wave[0]) & (full_df['date'] <= second_wave[1])]
+third_wave = full_df[(full_df['date'] >= third_wave[0]) & (full_df['date'] <= third_wave[1])]
+first_wave_stats = [np.max(first_wave[x]) for x in first_wave[categories]]
+second_wave_stats = [np.max(second_wave[x]) for x in second_wave[categories]]
+third_wave_stats = [np.max(third_wave[x]) for x in third_wave[categories]]
+
+trace_radar = make_subplots(rows=1, cols=3,
+                            specs=[[{'type': 'polar'}, {'type': 'polar'}, {'type': 'polar'}]]
+                            )
+stats = [first_wave_stats, second_wave_stats, third_wave_stats]
+names = ['first wave', 'second wave', 'third wave']
+
+for i in range(len(stats)):
+    trace_radar.add_trace(go.Scatterpolar(r=np.power(stats[i], 1 / 5),
+                                          theta=categories,
+                                          fill='toself',
+                                          fillcolor=line_colors[i],
+                                          opacity=0.5,
+                                          textfont=dict(color='#fff'),
+                                          line=dict(color=line_colors[i]),
+                                          name=names[i]),
+                          row=1, col=i + 1)
+
+trace_radar.update_polars(radialaxis=dict(color='#fff'),
+                          angularaxis=dict(color='#fff'))
+
+trace_radar.update_layout(
+    polar=dict(radialaxis=dict(visible=True,
+                               gridcolor='#404040',
+                               ),
+               bgcolor='#262625',
+               ),
+    polar2=dict(radialaxis=dict(visible=True,
+                                gridcolor='#404040',
+                                ),
+                bgcolor='#262625',
+                ),
+    polar3=dict(radialaxis=dict(visible=True,
+                                gridcolor='#404040',
+                                ),
+                bgcolor='#262625',
+                ),
+    title=dict(text='Waves',
+               font=dict(color='#fff')),
+    legend=dict(font=dict(color='#fff')),
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=450
+)
+
+############################# layouts ########################################
 layout = html.Div([
     html.Div([
         html.H2(
@@ -304,7 +587,7 @@ layout = html.Div([
             html.P(
                 dcc.Markdown(
                     f'During the last week reported, Sri Lanka averaged about '
-                    f'**{current_rate}** doses administered '
+                    f'**{int(np.rint(current_rate))}** doses administered '
                     f'each day. At that rate, it will take a further **{int(np.rint(full_df["population"].head(1) * 0.1 / current_rate))}** days to administer enough doses '
                     f'for another **{10}%** of the population.'),
                 style={'width': '64%',
@@ -318,7 +601,70 @@ layout = html.Div([
                        'margin': '44px auto'}),
             dcc.Graph(id='vac-prog',
                       figure=vaccination_progress)], style={'width': '80%',
-                                                            'height': '400px',
                                                             'margin': '0 auto'})
     ]),
+    html.Div([
+        html.Div([
+            dcc.Graph(id='vaccination-eff',
+                      figure=vaccination_eff)
+        ], style={'width': '50%',
+                  'display': 'inline-block'}),
+        html.Div([
+            dcc.Graph(id='new-vaccination-by-day',
+                      figure=vaccination_day)
+        ], style={'width': '50%',
+                  'float': 'right',
+                  'display': 'inline-block'})
+    ]),
+    html.Div([
+        html.Div([
+            dcc.Graph(id='district_bubble')
+        ], style={'width': '80%',
+                  'display': 'inline-block'}),
+        html.Div([
+            dcc.Dropdown(id='dist-year-dropdown',
+                         options=[
+                             {'label': '2020', 'value': 2020},
+                             {'label': '2021', 'value': 2021},
+                         ],
+                         value=0,
+                         style={'width': '76%',
+                                'border-radius': '20px',
+                                'margin-top': '12px'}
+                         ),
+            dcc.Dropdown(id='dist-month-dropdown',
+                         options=[],
+                         value=0,
+                         style={'width': '76%',
+                                'border-radius': '20px',
+                                'margin-top': '12px'}),
+            dcc.Dropdown(id='dist-district-dropdown',
+                         options=[{'label': dist, 'value': dist} for dist in
+                                  district_data.select_dtypes(include=np.number).columns],
+                         value='COLOMBO',
+                         style={'width': '76%',
+                                'border-radius': '20px',
+                                'margin-top': '12px'})
+        ], style={'width': '20%',
+                  'display': 'inline-block',
+                  'float': 'right'})
+    ]),
+    html.Div([
+        html.Div([
+            dcc.Graph(id='cluster-duration',
+                      figure=cluster_duration)
+        ], style={'width': '60%', 'display': 'inline-block'}),
+        html.Div([
+            dcc.Graph(id='cluster-proportion',
+                      figure=cluster_cases)
+        ], style={'width': '40%', 'display': 'inline-block', 'float': 'right'})
+    ]),
+    html.Div([
+        dcc.Graph(id='cluster-growing-rate',
+                  figure=cluster_grow)
+    ]),
+    html.Div([
+        dcc.Graph(id='wave-trace',
+                  figure=trace_radar)
+    ])
 ])
