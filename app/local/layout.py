@@ -10,6 +10,8 @@ import datetime
 full_df = pd.read_pickle('app/data/sl_full_cleaned.pkl')
 subset_vac = full_df[full_df['new_vaccinations'] > 0]
 district_data = pd.read_csv('app/data/disdrict distribution.csv')
+world_data = pd.read_csv('app/data/owid-covid-data.csv')
+world_data.fillna(value=0, inplace=True)
 
 ############################## map ########################################################
 worldmap = go.Figure(go.Scattergeo(mode='markers',
@@ -510,6 +512,93 @@ trace_radar.update_layout(
     height=425
 )
 
+############################# state competition ##############################
+asia_stat = world_data[world_data['continent'] == 'Asia'][['location', 'total_cases', 'total_deaths']].groupby(
+    by='location').max()
+asia_stat = asia_stat * 100 / np.sum(asia_stat)
+asia_stat = asia_stat.sort_values(by='total_cases')
+
+state_compare_infections = go.Figure()
+
+for index in asia_stat.index:
+    if index == 'Sri Lanka':
+        color = '#E5D17F'
+        width = 0.35
+    else:
+        color = '#63686E'
+        width = 0.3
+
+    state_compare_infections.add_trace(go.Bar(name=index,
+                                              x=[asia_stat.loc[index, asia_stat.columns[0]]],
+                                              y=[asia_stat.columns[0]],
+                                              orientation='h',
+                                              marker=dict(color=color),
+                                              width=width))
+
+state_compare_infections.update_layout(barmode='stack',
+                                       title=dict(text='Infections in Asia and the Middle East',
+                                                  font=dict(color='#fff'),
+                                                  xanchor='left',
+                                                  x=0.01,
+                                                  yanchor='bottom',
+                                                  y=0.8),
+                                       xaxis=dict(visible=False,
+                                                  showgrid=False,
+                                                  showline=False,
+                                                  color='white',
+                                                  zeroline=False),
+                                       yaxis=dict(visible=False,
+                                                  gridcolor='#404040',
+                                                  showgrid=False,
+                                                  showline=False,
+                                                  color='white'),
+                                       showlegend=False,
+                                       paper_bgcolor='#262625',
+                                       plot_bgcolor='#262625',
+                                       height=200,
+                                       margin=dict(l=10, r=0, t=0, b=0))
+
+############################# compare deaths #################################
+state_compare_deaths = go.Figure()
+
+for index in asia_stat.index:
+    if index == 'Sri Lanka':
+        color = '#E5D17F'
+        width = 0.35
+    else:
+        color = '#63686E'
+        width = 0.3
+
+    state_compare_deaths.add_trace(go.Bar(name=index,
+                                          x=[asia_stat.loc[index, asia_stat.columns[1]]],
+                                          y=[asia_stat.columns[1]],
+                                          orientation='h',
+                                          marker=dict(color=color),
+                                          width=width))
+
+state_compare_deaths.update_layout(barmode='stack',
+                                   title=dict(text='Deaths in Asia and the Middle East',
+                                              font=dict(color='#fff'),
+                                              xanchor='left',
+                                              x=0.01,
+                                              yanchor='bottom',
+                                              y=0.8),
+                                   xaxis=dict(visible=False,
+                                              showgrid=False,
+                                              showline=False,
+                                              color='white',
+                                              zeroline=False),
+                                   yaxis=dict(visible=False,
+                                              gridcolor='#404040',
+                                              showgrid=False,
+                                              showline=False,
+                                              color='white'),
+                                   showlegend=False,
+                                   paper_bgcolor='#262625',
+                                   plot_bgcolor='#262625',
+                                   height=200,
+                                   margin=dict(l=10, r=0, t=0, b=0))
+
 ############################# layouts ########################################
 layout = html.Div([
     html.Div([
@@ -706,7 +795,9 @@ layout = html.Div([
         html.Div([
             dcc.Graph(id='cluster-proportion',
                       figure=cluster_cases)
-        ], style={'width': '40%', 'display': 'inline-block', 'float': 'right'})
+        ], style={'width': '40%',
+                  'display': 'inline-block',
+                  'float': 'right'})
     ]),
     html.Div([
         dcc.Graph(id='cluster-growing-rate',
@@ -729,5 +820,24 @@ layout = html.Div([
                             'margin-bottom': '12px'}
                      ),
         dcc.Graph(id='lock-down-effect')
-    ])
+    ]),
+    html.Div([
+        dcc.Graph(id='state-comp_infection',
+                  figure=state_compare_infections,
+                  ),
+        dcc.Graph(id='state-comp_death',
+                  figure=state_compare_deaths,
+                  )
+    ], style={'width': '40%',
+              'display': 'inline-block'}),
+    html.Div([
+        dcc.Graph(id='global_state-comp_infection',
+                  figure=state_compare_infections,
+                  ),
+        dcc.Graph(id='global_state-comp_death',
+                  figure=state_compare_deaths,
+                  )
+    ], style={'width': '40%',
+              'display': 'inline-block',
+              'float': 'right'})
 ])
