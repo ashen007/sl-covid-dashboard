@@ -279,3 +279,44 @@ def register_callbacks(dash_app):
     def update_month(year):
         return [{'label': i, 'value': i} for i in
                 district_data[district_data['date'].dt.year == year]['date'].dt.month.unique()]
+
+    @dash_app.callback(Output('lock-down-effect', 'figure'),
+                       Input('lock-downs', 'value'))
+    def lockdown_timeline(sector):
+        lockdown_data = pd.read_csv('app/data/lockdowns.csv')
+        fig = px.timeline(lockdown_data[lockdown_data['type'] == sector],
+                          x_start='from',
+                          x_end='till',
+                          y='nationwide',
+                          color='level',
+                          color_discrete_sequence=px.colors.diverging.delta_r,
+                          )
+
+        fig.update_layout(
+            title=dict(text='Lock Downs',
+                       font=dict(color='#fff')),
+            xaxis=dict(title='Date',
+                       showgrid=False,
+                       showline=False,
+                       color='white',
+                       zeroline=False),
+            yaxis=dict(title='',
+                       gridcolor='#404040',
+                       gridwidth=1,
+                       showline=False,
+                       color='white'),
+            legend=dict(title=dict(text='levels',
+                                   font=dict(color='#fff')),
+                        orientation='h',
+                        yanchor='top',
+                        xanchor='right',
+                        x=1, y=1.09,
+                        font=dict(color='#fff')),
+            coloraxis_showscale=False,
+            paper_bgcolor='#262625',
+            plot_bgcolor='#262625',
+            height=500,
+            transition_duration=500,
+            margin=dict(l=10))
+
+        return fig

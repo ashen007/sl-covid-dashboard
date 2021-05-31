@@ -484,7 +484,7 @@ trace_radar.update_layout(
     legend=dict(font=dict(color='#fff')),
     paper_bgcolor='#262625',
     plot_bgcolor='#262625',
-    height=450
+    height=425
 )
 
 ############################# layouts ########################################
@@ -666,5 +666,19 @@ layout = html.Div([
     html.Div([
         dcc.Graph(id='wave-trace',
                   figure=trace_radar)
+    ]),
+    html.Div([
+        dcc.Dropdown(id='lock-downs',
+                     options=[
+                         {'label': 'education', 'value': 'education'},
+                         {'label': 'workplaces', 'value': 'workplaces'},
+                         {'label': 'borders', 'value': 'borders'},
+                     ],
+                     value='education',
+                     style={'width': '34%',
+                            'border-radius': '20px',
+                            'margin-bottom': '12px'}
+                     ),
+        dcc.Graph(id='lock-down-effect')
     ])
 ])
