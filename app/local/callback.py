@@ -18,6 +18,8 @@ dist = pd.merge(right=full_df[full_df['date'] > '2020-03-31'][['date', 'new_test
                 left=district_data,
                 on='date')
 districts = dist.select_dtypes(include=np.number).columns[:-2]
+world_data = pd.read_csv('app/data/owid-covid-data.csv')
+world_data.fillna(value=0, inplace=True)
 
 for district in districts:
     dist[district] = dist[district].diff()
@@ -279,3 +281,375 @@ def register_callbacks(dash_app):
     def update_month(year):
         return [{'label': i, 'value': i} for i in
                 district_data[district_data['date'].dt.year == year]['date'].dt.month.unique()]
+
+    @dash_app.callback(Output('lock-down-effect', 'figure'),
+                       Input('lock-downs', 'value'))
+    def lockdown_timeline(sector):
+        lockdown_data = pd.read_csv('app/data/lockdowns.csv')
+        fig = px.timeline(lockdown_data[lockdown_data['type'] == sector],
+                          x_start='from',
+                          x_end='till',
+                          y='nationwide',
+                          color='level',
+                          color_discrete_sequence=px.colors.diverging.delta_r,
+                          )
+
+        fig.update_layout(
+            title=dict(text='Lock Downs',
+                       font=dict(color='#fff')),
+            xaxis=dict(title='Date',
+                       showgrid=False,
+                       showline=False,
+                       color='white',
+                       zeroline=False),
+            yaxis=dict(title='',
+                       gridcolor='#404040',
+                       gridwidth=1,
+                       showline=False,
+                       color='white'),
+            legend=dict(title=dict(text='levels',
+                                   font=dict(color='#fff')),
+                        orientation='h',
+                        yanchor='top',
+                        xanchor='right',
+                        x=1, y=1.09,
+                        font=dict(color='#fff')),
+            coloraxis_showscale=False,
+            paper_bgcolor='#262625',
+            plot_bgcolor='#262625',
+            height=500,
+            transition_duration=500,
+            margin=dict(l=10))
+
+        return fig
+
+    @dash_app.callback(Output('state-comp_infection', 'figure'),
+                       Output('state-comp_death', 'figure'),
+                       Output('global_state-comp_infection', 'figure'),
+                       Output('global_state-comp_death', 'figure'),
+                       Input('compare-tabs', 'value')
+                       )
+    def update_compare_graphs(tab):
+        running_avg = pd.DataFrame()
+        running_avg_glob = pd.DataFrame()
+
+        global asia_stat, world_stat
+
+        if tab == 1:
+            indexes = ['location', 'total_cases', 'total_deaths']
+
+            asia_stat = world_data[world_data['continent'] == 'Asia'][indexes].groupby(by='location').max()
+            asia_stat = asia_stat * 100 / np.sum(asia_stat)
+            asia_stat = asia_stat.sort_values(by=asia_stat.columns[0])
+            world_stat = world_data[indexes].groupby(by='location').max()
+            world_stat = world_stat.drop(
+                ['Asia', 'Africa', 'Europe', 'European Union', 'North America', 'South America', 'World'])
+            world_stat = world_stat * 100 / np.sum(world_stat)
+            world_stat = world_stat.sort_values(by=world_stat.columns[0])
+
+        elif tab == 2:
+            indexes = ['location', 'total_cases_per_million', 'total_deaths_per_million']
+
+            asia_stat = world_data[world_data['continent'] == 'Asia'][indexes].groupby(by='location').max()
+            asia_stat = asia_stat * 100 / np.sum(asia_stat)
+            asia_stat = asia_stat.sort_values(by=asia_stat.columns[0])
+            world_stat = world_data[indexes].groupby(by='location').max()
+            world_stat = world_stat.drop(
+                ['Asia', 'Africa', 'Europe', 'European Union', 'North America', 'South America', 'World'])
+            world_stat = world_stat * 100 / np.sum(world_stat)
+            world_stat = world_stat.sort_values(by=world_stat.columns[0])
+
+        elif tab == 3:
+            running_avg = pd.DataFrame()
+            running_avg_glob = pd.DataFrame()
+            indexes = ['location', 'new_cases', 'new_deaths']
+
+            asia_stat = world_data[world_data['continent'] == 'Asia'][indexes].groupby(by='location').ewm(
+                span=2).mean().reset_index().drop('level_1', axis=1).set_index('location')
+
+            for u_index in asia_stat.index.unique():
+                running_avg = running_avg.append(asia_stat.loc[u_index].tail(1))
+
+            asia_stat = running_avg
+            asia_stat.fillna(value=0, inplace=True)
+
+            asia_stat = asia_stat * 100 / np.sum(asia_stat)
+            asia_stat = asia_stat.sort_values(by=asia_stat.columns[0])
+
+            world_stat = world_data[indexes].groupby(by='location').ewm(span=2).mean().reset_index().drop('level_1',
+                                                                                                          axis=1).set_index(
+                'location')
+
+            for u_index in world_stat.index.unique():
+                running_avg_glob = running_avg_glob.append(world_stat.loc[u_index].tail(1))
+
+            world_stat = running_avg_glob
+            world_stat.fillna(value=0, inplace=True)
+
+            world_stat = world_stat.drop(
+                ['Asia', 'Africa', 'Europe', 'European Union', 'North America', 'South America', 'World'])
+            world_stat = world_stat * 100 / np.sum(world_stat)
+            world_stat = world_stat.sort_values(by=world_stat.columns[0])
+
+        ############################# state competition ##############################
+        state_compare_infections = go.Figure()
+
+        for index in asia_stat.index:
+            if index == 'Sri Lanka':
+                color = '#E5D17F'
+                width = 0.35
+            else:
+                color = '#7A8C7E'
+                width = 0.3
+
+            state_compare_infections.add_trace(go.Bar(name=index,
+                                                      x=[asia_stat.loc[index, asia_stat.columns[0]]],
+                                                      y=[asia_stat.columns[0]],
+                                                      orientation='h',
+                                                      marker=dict(color=color,
+                                                                  ),
+                                                      width=width))
+
+        annotation = []
+
+        if tab == 3:
+            annotation.append(dict(xref='x', yref='paper',
+                                   text=f'Sri Lanka {np.round(running_avg.loc["Sri Lanka", running_avg.columns[0]], 2)}',
+                                   x=np.sum(
+                                       asia_stat.loc[:'Sri Lanka', asia_stat.columns[0]]),
+                                   y=0.65,
+                                   font=dict(size=12,
+                                             color='#E5D17F'),
+                                   arrowcolor='#fff'))
+        else:
+            annotation.append(dict(xref='x', yref='paper',
+                                   text=f'Sri Lanka {np.round(asia_stat.loc["Sri Lanka", asia_stat.columns[0]], 2)}%',
+                                   x=np.sum(
+                                       asia_stat.loc[:'Sri Lanka', asia_stat.columns[0]]),
+                                   y=0.65,
+                                   font=dict(size=12,
+                                             color='#E5D17F'),
+                                   arrowcolor='#fff'))
+
+        state_compare_infections.update_layout(barmode='stack',
+                                               title=dict(text='Infections in Asia and the Middle East',
+                                                          font=dict(color='#fff'),
+                                                          xanchor='left',
+                                                          x=0.01,
+                                                          yanchor='bottom',
+                                                          y=0.8),
+                                               xaxis=dict(visible=False,
+                                                          showgrid=False,
+                                                          showline=False,
+                                                          color='white',
+                                                          zeroline=False),
+                                               yaxis=dict(visible=False,
+                                                          gridcolor='#404040',
+                                                          showgrid=False,
+                                                          showline=False,
+                                                          color='white'),
+                                               annotations=annotation,
+                                               showlegend=False,
+                                               paper_bgcolor='#262625',
+                                               plot_bgcolor='#262625',
+                                               height=265,
+                                               margin=dict(l=10, r=0, t=10, b=0),
+                                               transition_duration=500)
+
+        ############################# compare deaths #################################
+        state_compare_deaths = go.Figure()
+        asia_stat = asia_stat.sort_values(by=asia_stat.columns[1])
+
+        for index in asia_stat.index:
+            if index == 'Sri Lanka':
+                color = '#E5D17F'
+                width = 0.35
+            else:
+                color = '#7A8C7E'
+                width = 0.3
+
+            state_compare_deaths.add_trace(go.Bar(name=index,
+                                                  x=[asia_stat.loc[index, asia_stat.columns[1]]],
+                                                  y=[asia_stat.columns[1]],
+                                                  orientation='h',
+                                                  marker=dict(color=color),
+                                                  width=width))
+
+        annotation = []
+
+        if tab == 3:
+            annotation.append(dict(xref='x', yref='paper',
+                                   text=f'Sri Lanka {np.round(running_avg.loc["Sri Lanka", running_avg.columns[1]], 2)}',
+                                   x=np.sum(
+                                       asia_stat.loc[:'Sri Lanka', asia_stat.columns[1]]),
+                                   y=0.65,
+                                   font=dict(size=12,
+                                             color='#E5D17F'),
+                                   arrowcolor='#fff'))
+        else:
+            annotation.append(dict(xref='x', yref='paper',
+                                   text=f'Sri Lanka {np.round(asia_stat.loc["Sri Lanka", asia_stat.columns[1]], 2)}%',
+                                   x=np.sum(
+                                       asia_stat.loc[:'Sri Lanka', asia_stat.columns[1]]),
+                                   y=0.65,
+                                   font=dict(size=12,
+                                             color='#E5D17F'),
+                                   arrowcolor='#fff'))
+
+        state_compare_deaths.update_layout(barmode='stack',
+                                           title=dict(text='Deaths in Asia and the Middle East',
+                                                      font=dict(color='#fff'),
+                                                      xanchor='left',
+                                                      x=0.01,
+                                                      yanchor='bottom',
+                                                      y=0.8),
+                                           xaxis=dict(visible=False,
+                                                      showgrid=False,
+                                                      showline=False,
+                                                      color='white',
+                                                      zeroline=False),
+                                           yaxis=dict(visible=False,
+                                                      gridcolor='#404040',
+                                                      showgrid=False,
+                                                      showline=False,
+                                                      color='white'),
+                                           annotations=annotation,
+                                           showlegend=False,
+                                           paper_bgcolor='#262625',
+                                           plot_bgcolor='#262625',
+                                           height=265,
+                                           margin=dict(l=10, r=0, t=10, b=0),
+                                           transition_duration=500)
+
+        ############################ Infections, globally ############################
+        glob_state_compare_infections = go.Figure()
+
+        for index in world_stat.index:
+            if index == 'Sri Lanka':
+                color = '#E5D17F'
+                width = 0.35
+            else:
+                color = '#7A8C7E'
+                width = 0.3
+
+            glob_state_compare_infections.add_trace(go.Bar(name=index,
+                                                           x=[world_stat.loc[index, world_stat.columns[0]]],
+                                                           y=[world_stat.columns[0]],
+                                                           orientation='h',
+                                                           marker=dict(color=color,
+                                                                       ),
+                                                           width=width))
+
+        annotation = []
+
+        if tab == 3:
+            annotation.append(dict(xref='x', yref='paper',
+                                   text=f'Sri Lanka {np.round(running_avg_glob.loc["Sri Lanka", running_avg_glob.columns[0]], 2)}',
+                                   x=np.sum(
+                                       world_stat.loc[:'Sri Lanka', world_stat.columns[0]]),
+                                   y=0.65,
+                                   font=dict(size=12,
+                                             color='#E5D17F'),
+                                   arrowcolor='#fff'))
+        else:
+            annotation.append(dict(xref='x', yref='paper',
+                                   text=f'Sri Lanka {np.round(world_stat.loc["Sri Lanka", world_stat.columns[0]], 2)}%',
+                                   x=np.sum(
+                                       world_stat.loc[:'Sri Lanka', world_stat.columns[0]]),
+                                   y=0.65,
+                                   font=dict(size=12,
+                                             color='#E5D17F'),
+                                   arrowcolor='#fff'))
+
+        glob_state_compare_infections.update_layout(barmode='stack',
+                                                    title=dict(text='Infections, globally',
+                                                               font=dict(color='#fff'),
+                                                               xanchor='left',
+                                                               x=0.01,
+                                                               yanchor='bottom',
+                                                               y=0.8),
+                                                    xaxis=dict(visible=False,
+                                                               showgrid=False,
+                                                               showline=False,
+                                                               color='white',
+                                                               zeroline=False),
+                                                    yaxis=dict(visible=False,
+                                                               gridcolor='#404040',
+                                                               showgrid=False,
+                                                               showline=False,
+                                                               color='white'),
+                                                    annotations=annotation,
+                                                    showlegend=False,
+                                                    paper_bgcolor='#262625',
+                                                    plot_bgcolor='#262625',
+                                                    height=265,
+                                                    margin=dict(l=10, r=0, t=10, b=0),
+                                                    transition_duration=500)
+
+        ############################# Deaths, globally ###############################
+        glob_state_compare_deaths = go.Figure()
+        world_stat = world_stat.sort_values(by=world_stat.columns[1])
+
+        for index in world_stat.index:
+            if index == 'Sri Lanka':
+                color = '#E5D17F'
+                width = 0.35
+            else:
+                color = '#7A8C7E'
+                width = 0.3
+
+            glob_state_compare_deaths.add_trace(go.Bar(name=index,
+                                                       x=[world_stat.loc[index, world_stat.columns[1]]],
+                                                       y=[world_stat.columns[1]],
+                                                       orientation='h',
+                                                       marker=dict(color=color,
+                                                                   ),
+                                                       width=width))
+
+        annotation = []
+
+        if tab == 3:
+            annotation.append(dict(xref='x', yref='paper',
+                                   text=f'Sri Lanka {np.round(running_avg_glob.loc["Sri Lanka", running_avg_glob.columns[1]], 2)}',
+                                   x=np.sum(
+                                       world_stat.loc[:'Sri Lanka', world_stat.columns[1]]),
+                                   y=0.65,
+                                   font=dict(size=12,
+                                             color='#E5D17F'),
+                                   arrowcolor='#fff'))
+        else:
+            annotation.append(dict(xref='x', yref='paper',
+                                   text=f'Sri Lanka {np.round(world_stat.loc["Sri Lanka", world_stat.columns[1]], 2)}%',
+                                   x=np.sum(
+                                       world_stat.loc[:'Sri Lanka', world_stat.columns[1]]),
+                                   y=0.65,
+                                   font=dict(size=12,
+                                             color='#E5D17F'),
+                                   arrowcolor='#fff'))
+
+        glob_state_compare_deaths.update_layout(barmode='stack',
+                                                title=dict(text='Deaths, globally',
+                                                           font=dict(color='#fff'),
+                                                           xanchor='left',
+                                                           x=0.01,
+                                                           yanchor='bottom',
+                                                           y=0.8),
+                                                xaxis=dict(visible=False,
+                                                           showgrid=False,
+                                                           showline=False,
+                                                           color='white',
+                                                           zeroline=False),
+                                                yaxis=dict(visible=False,
+                                                           gridcolor='#404040',
+                                                           showgrid=False,
+                                                           showline=False,
+                                                           color='white'),
+                                                annotations=annotation,
+                                                showlegend=False,
+                                                paper_bgcolor='#262625',
+                                                plot_bgcolor='#262625',
+                                                height=265,
+                                                margin=dict(l=10, r=0, t=10, b=0),
+                                                transition_duration=500)
+
+        return state_compare_infections, state_compare_deaths, glob_state_compare_infections, glob_state_compare_deaths

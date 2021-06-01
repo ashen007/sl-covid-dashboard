@@ -11,6 +11,40 @@ full_df = pd.read_pickle('app/data/sl_full_cleaned.pkl')
 subset_vac = full_df[full_df['new_vaccinations'] > 0]
 district_data = pd.read_csv('app/data/disdrict distribution.csv')
 
+last2weeks = full_df[['new_cases']].tail(14)
+last_week = last2weeks.head(7).ewm(span=2, adjust=True).mean().tail(1).values[0][0]
+this_week = last2weeks.tail(7).ewm(span=2, adjust=True).mean().tail(1).values[0][0]
+
+situation = 0
+
+if (this_week - last_week) < 0:
+    situation = 'falling'
+else:
+    situation = 'rissing'
+
+############################## map ########################################################
+worldmap = go.Figure(go.Scattergeo(mode='markers',
+                                   lat=[7.8731],
+                                   lon=[80.7718],
+                                   showlegend=False,
+                                   marker=dict(color='#E5D17F', size=5)))
+
+worldmap.update_geos(projection=dict(type='orthographic',
+                                     scale=0.7,
+                                     rotation=dict(lon=80.7718)),
+                     landcolor='#595D65',
+                     oceancolor='#262625',
+                     showocean=True,
+                     showlakes=False,
+                     showcountries=True,
+                     bgcolor='#262625'
+                     )
+
+worldmap.update_layout(paper_bgcolor='#262625',
+                       plot_bgcolor='#262625',
+                       height=280,
+                       margin=dict(t=0, l=0, b=0, r=0))
+
 ############################## vaccination progress #######################################
 
 span = subset_vac.shape[0] / subset_vac['date'].dt.month.nunique()
@@ -59,7 +93,7 @@ vaccination_progress.update_layout(xaxis=dict(showgrid=False,
                                    width=900,
                                    paper_bgcolor='#262625',
                                    plot_bgcolor='#262625',
-                                   margin=dict(l=40, r=10))
+                                   margin=dict(t=0, b=0, l=40, r=10))
 
 annotations = []
 
@@ -484,11 +518,49 @@ trace_radar.update_layout(
     legend=dict(font=dict(color='#fff')),
     paper_bgcolor='#262625',
     plot_bgcolor='#262625',
-    height=450
+    height=425
 )
 
 ############################# layouts ########################################
 layout = html.Div([
+    html.Div([
+        dcc.Graph(id='location',
+                  figure=worldmap,
+                  style={'width': '50%',
+                         'margin': '0 auto'},
+                  config={'modeBarButtonsToRemove': ['pan2d']}),
+        html.H1(id='country',
+                children='Sri Lanka',
+                style={'color': '#E5D17F',
+                       'width': '50%',
+                       'margin': '0 auto',
+                       'text-align': 'center',
+                       'font-size': '50px',
+                       'line-height': '56px',
+                       'font-weight': '100'}),
+        html.H2(id='contry-trend',
+                children=dcc.Markdown(
+                    f'**{np.round(full_df["new_cases"].tail(1).values[0] * 100 / np.max(full_df["new_cases"]), 2)}**% of peak '
+                    f'and {situation}'),
+                style={'color': '#E5D17F',
+                       'width': '50%',
+                       'margin': '0 auto',
+                       'text-align': 'center',
+                       'font-size': '24px',
+                       'line-height': '30px',
+                       'font-weight': '100'}
+                ),
+        html.H4(id='contry-infection-rate',
+                children=dcc.Markdown(
+                    f'**{int(np.rint(np.sum(full_df["new_cases"].tail(7)) * 100000 / np.max(full_df["population"])))}**'
+                    f' infections per 100K people reported last 7 days'),
+                style={'width': '50%',
+                       'margin': '44px auto',
+                       'color': '#fff',
+                       'font-weight': '100',
+                       'text-align': 'center'}
+                )
+    ]),
     html.Div([
         html.H2(
             id='local-header',
@@ -657,7 +729,9 @@ layout = html.Div([
         html.Div([
             dcc.Graph(id='cluster-proportion',
                       figure=cluster_cases)
-        ], style={'width': '40%', 'display': 'inline-block', 'float': 'right'})
+        ], style={'width': '40%',
+                  'display': 'inline-block',
+                  'float': 'right'})
     ]),
     html.Div([
         dcc.Graph(id='cluster-growing-rate',
@@ -666,5 +740,51 @@ layout = html.Div([
     html.Div([
         dcc.Graph(id='wave-trace',
                   figure=trace_radar)
+    ]),
+    html.Div([
+        dcc.Dropdown(id='lock-downs',
+                     options=[
+                         {'label': 'education', 'value': 'education'},
+                         {'label': 'workplaces', 'value': 'workplaces'},
+                         {'label': 'borders', 'value': 'borders'},
+                     ],
+                     value='education',
+                     style={'width': '34%',
+                            'border-radius': '20px',
+                            'margin-bottom': '12px'}
+                     ),
+        dcc.Graph(id='lock-down-effect')
+    ]),
+    html.Div([
+        html.Div([
+            dcc.Tabs(id='compare-tabs', value=1,
+                     children=[
+                         dcc.Tab(label='Total infections and deaths', value=1, style={'color': '#fff',
+                                                                                      'background-color': '#262625'}),
+                         dcc.Tab(label='Total per population', value=2, style={'color': '#fff',
+                                                                               'background-color': '#262625'}),
+                         dcc.Tab(label='Average daily reported', value=3, style={'color': '#fff',
+                                                                                 'background-color': '#262625'}),
+                     ], style={'width': '80%',
+                               'margin': '0 auto'
+                               }),
+            html.Div([
+                html.Div([
+                    dcc.Graph(id='state-comp_infection',
+                              ),
+                    dcc.Graph(id='state-comp_death',
+                              )
+                ], style={'width': '40%',
+                          'display': 'inline-block'}),
+                html.Div([
+                    dcc.Graph(id='global_state-comp_infection',
+                              ),
+                    dcc.Graph(id='global_state-comp_death',
+                              )
+                ], style={'width': '40%',
+                          'display': 'inline-block',
+                          'float': 'right'})
+            ])
+        ]),
     ])
 ])
