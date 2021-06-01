@@ -11,6 +11,17 @@ full_df = pd.read_pickle('app/data/sl_full_cleaned.pkl')
 subset_vac = full_df[full_df['new_vaccinations'] > 0]
 district_data = pd.read_csv('app/data/disdrict distribution.csv')
 
+last2weeks = full_df[['new_cases']].tail(14)
+last_week = last2weeks.head(7).ewm(span=2, adjust=True).mean().tail(1).values[0][0]
+this_week = last2weeks.tail(7).ewm(span=2, adjust=True).mean().tail(1).values[0][0]
+
+situation = 0
+
+if (this_week - last_week) < 0:
+    situation = 'falling'
+else:
+    situation = 'rissing'
+
 ############################## map ########################################################
 worldmap = go.Figure(go.Scattergeo(mode='markers',
                                    lat=[7.8731],
@@ -527,6 +538,18 @@ layout = html.Div([
                        'font-size': '50px',
                        'line-height': '56px',
                        'font-weight': '100'}),
+        html.H2(id='contry-trend',
+                children=dcc.Markdown(
+                    f'**{np.round(full_df["new_cases"].tail(1).values[0] * 100 / np.max(full_df["new_cases"]), 2)}**% of peak '
+                    f'and {situation}'),
+                style={'color': '#E5D17F',
+                       'width': '50%',
+                       'margin': '0 auto',
+                       'text-align': 'center',
+                       'font-size': '24px',
+                       'line-height': '30px',
+                       'font-weight': '100'}
+                ),
         html.H4(id='contry-infection-rate',
                 children=dcc.Markdown(
                     f'**{int(np.rint(np.sum(full_df["new_cases"].tail(7)) * 100000 / np.max(full_df["population"])))}**'
