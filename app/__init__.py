@@ -1,5 +1,4 @@
 import dash
-from flask.helpers import get_root_path
 from flask import Flask
 
 
@@ -10,6 +9,11 @@ def create_app():
     from app.local.layout import layout as local_layouts
     register_dash_app(app=server, title='local', base_pathname='local', layout=local_layouts,
                       register_callback_function=local_callbacks)
+
+    from app.overview.callback import register_callbacks as global_callbacks
+    from app.overview.layout import layout as global_layouts
+    register_dash_app(app=server, title='global overview', base_pathname='overview', layout=global_layouts,
+                      register_callback_function=global_callbacks)
 
     # from region.callback import register_callbacks as overall_callbacks
     # from app.region.layout import layout as overall_layouts
