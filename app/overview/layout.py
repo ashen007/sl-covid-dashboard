@@ -7,8 +7,8 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import datetime
 
-world_data = pd.read_csv('app/data/owid-covid-data.csv')
-world_data.fillna(value=0, inplace=True)
+data = pd.read_csv('app/data/owid-covid-data.csv')
+world_data = data.fillna(value=0)
 drop_index = []
 
 for loc in world_data['location']:
@@ -76,5 +76,30 @@ layout = html.Div([
                       }
                       )
         ])
+    ]),
+    html.Section([
+        html.Div([
+            dcc.Dropdown(
+                id='situation-dropdown',
+                options=[
+                    {'label': 'cases', 'value': 1},
+                    {'label': 'death', 'value': 2},
+                    {'label': 'vaccination', 'value': 3}
+                ],
+                value=1,
+                style={'width': '40%',
+                       'border-radius': '20px'}
+            )
+        ]),
+        html.Div([
+            html.Div([
+                dcc.Graph(id='global-situation-new')
+            ], style={'width': '48%',
+                      'display': 'inline-block'}),
+            html.Div([
+                dcc.Graph(id='global-situation-total')
+            ], style={'width': '48%',
+                      'display': 'inline-block',
+                      'float': 'right'})])
     ])
 ])
