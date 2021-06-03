@@ -133,6 +133,21 @@ for loc in top_deaths['location']:
 top_contries_cases.update_layout(situation_updater)
 top_contries_deaths.update_layout(situation_updater)
 
+#################################### peak map ###########################
+peak_map = go.Figure()
+
+peaks = world_data[['location', 'new_cases']].groupby('location').max().reset_index()
+weekly_rate = world_data[world_data['date'] >= last_date - datetime.timedelta(days=13)][
+    ['date', 'location', 'new_cases']].set_index('date')
+weekly_rate = weekly_rate.groupby(by='location').resample('7D').mean().reset_index()
+current_week = weekly_rate.groupby(by='location')[['date']].max().reset_index()
+
+weekly_rate = pd.merge(current_week, weekly_rate, how='left', on=['location', 'date'])
+weekly_rate = pd.merge(weekly_rate, peaks, how='left', on=['location'])
+weekly_rate.rename(columns={'new_cases_x': 'new_cases', 'new_cases_y': 'peak'}, inplace=True)
+weekly_rate['proximity_to_peak'] = weekly_rate['new_cases'] * 100 / weekly_rate['peak']
+weekly_rate.fillna(value=0, inplace=True)
+
 #################################### layout #############################
 topCountry = world_data[world_data['date'] >= last_date - datetime.timedelta(days=13)][
     ['date', 'location', 'new_cases', 'new_deaths']].set_index('date')
