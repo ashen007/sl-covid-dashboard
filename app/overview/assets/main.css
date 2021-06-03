@@ -39,5 +39,8 @@ h2#local-header {
 
 h1, h2, h3, h4, p {
     letter-spacing: 0.5px;
-    color: #CBCCCF;
+}
+
+.case-rate p, .death-rate p {
+    margin: 0 0 8px 206px;
 }
