@@ -135,6 +135,7 @@ top_contries_deaths.update_layout(situation_updater)
 
 #################################### peak map ###########################
 peak_map = go.Figure()
+bubble_color = ['crimson', 'orange', 'lightgrey']
 
 peaks = world_data[['location', 'new_cases']].groupby('location').max().reset_index()
 weekly_rate = world_data[world_data['date'] >= last_date - datetime.timedelta(days=13)][
@@ -146,7 +147,46 @@ weekly_rate = pd.merge(current_week, weekly_rate, how='left', on=['location', 'd
 weekly_rate = pd.merge(weekly_rate, peaks, how='left', on=['location'])
 weekly_rate.rename(columns={'new_cases_x': 'new_cases', 'new_cases_y': 'peak'}, inplace=True)
 weekly_rate['proximity_to_peak'] = weekly_rate['new_cases'] * 100 / weekly_rate['peak']
+weekly_rate['text'] = weekly_rate['location'] + '<br>' + np.round(weekly_rate['proximity_to_peak'], 2).astype(str) + '%'
 weekly_rate.fillna(value=0, inplace=True)
+
+condition = [weekly_rate[weekly_rate['proximity_to_peak'] > 90],
+             weekly_rate[(weekly_rate['proximity_to_peak'] > 75) & (weekly_rate['proximity_to_peak'] <= 90)],
+             weekly_rate[weekly_rate['proximity_to_peak'] <= 75]]
+name = ['>90%', '90 to 75%', '<75%']
+
+for i in range(len(condition)):
+    temp = condition[i]
+    peak_map.add_trace(go.Scattergeo(locations=temp['location'],
+                                     locationmode='country names',
+                                     marker=dict(size=temp['proximity_to_peak'],
+                                                 color=bubble_color[i],
+                                                 sizemode='area'),
+                                     name=name[i],
+                                     text=temp['text']))
+
+peak_map.update_layout(showlegend=True,
+                       legend=dict(orientation='h',
+                                   yanchor='top',
+                                   xanchor='right',
+                                   x=0.6, y=0.9,
+                                   font=dict(color='#fff')),
+                       geo=dict(landcolor='#63686F',
+                                lataxis=dict(range=[66.57, -10.046630]),
+                                oceancolor='#262625',
+                                showocean=True,
+                                showlakes=False,
+                                showcountries=True,
+                                bgcolor='#262625',
+                                showframe=False
+                                ),
+                       paper_bgcolor='#262625',
+                       plot_bgcolor='#262625',
+                       height=800,
+                       dragmode=False,
+                       transition_duration=500,
+                       margin=dict(t=0, b=0, l=0, r=0)
+                       )
 
 #################################### layout #############################
 topCountry = world_data[world_data['date'] >= last_date - datetime.timedelta(days=13)][
@@ -344,5 +384,18 @@ layout = html.Div([
                                                            style={'margin-left': '10px'})]),
                                  ], style={'color': '#fff', 'width': '100%', 'margin': '52px auto'})
         ])
-    ])
+    ]),
+    html.Section(
+        html.Div([
+            dcc.Graph(id='peak-map',
+                      figure=peak_map,
+                      config={
+                          'displayModeBar': False
+                      },
+                      style={
+                          'width': '100%'
+                      }
+                      )
+        ])
+    )
 ])
