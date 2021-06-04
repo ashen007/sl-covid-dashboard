@@ -188,6 +188,64 @@ peak_map.update_layout(showlegend=True,
                        margin=dict(t=0, b=0, l=0, r=0)
                        )
 
+#################################### vaccination ########################
+vaccinations_given = world_data[['location', 'new_vaccinations']].groupby(by='location').sum()
+vaccinations_given = pd.merge(vaccinations_given,
+                              world_data[world_data['population'] > 1000000][
+                                  ['location', 'population']].drop_duplicates(), how='inner', on='location')
+vaccinations_given['per_population'] = vaccinations_given['new_vaccinations'] / vaccinations_given['population']
+top_vaccination = vaccinations_given.sort_values(by='per_population', ascending=True).tail(20)
+
+top_vacc = go.Figure()
+annotations = []
+
+top_vacc.add_trace(go.Bar(x=top_vaccination['per_population'] * 100,
+                          y=top_vaccination['location'],
+                          marker=dict(color=fill_color[2],
+                                      line=dict(color=fill_color[2],
+                                                width=0.5)),
+                          orientation='h'))
+
+top_vacc.add_vline(x=80,
+                   line_width=3,
+                   line_dash='dash',
+                   line_color='#44535F',
+                   annotation_text='Enough to give 2 <br>doses to 40% of the population',
+                   annotation_position='top',
+                   annotation_font_color='#fff')
+
+top_vacc.add_vline(x=160,
+                   line_width=3,
+                   line_dash='dash',
+                   line_color='#44535F',
+                   annotation_text='Enough to give 2 <br>doses to 80% of the population',
+                   annotation_position='top',
+                   annotation_font_color='#fff')
+
+top_vacc.update_layout(title=dict(text='Countries reporting the most doses administered per population',
+                                  font=dict(color='#fff')),
+                       yaxis=dict(
+                           showgrid=False,
+                           showline=False,
+                           showticklabels=True,
+                           color='white',
+                       ),
+                       xaxis=dict(
+                           zeroline=False,
+                           showline=False,
+                           showticklabels=True,
+                           showgrid=True,
+                           gridcolor='#404040',
+                           color='white',
+                       ),
+                       showlegend=False,
+                       margin=dict(l=10, r=10, t=70, b=70),
+                       paper_bgcolor='#262625',
+                       plot_bgcolor='#262625',
+                       height=800,
+                       dragmode=False,
+                       )
+
 #################################### layout #############################
 topCountry = world_data[world_data['date'] >= last_date - datetime.timedelta(days=13)][
     ['date', 'location', 'new_cases', 'new_deaths']].set_index('date')
@@ -397,5 +455,21 @@ layout = html.Div([
                       }
                       )
         ])
+    ),
+    html.Section(
+        html.Div([
+            dcc.Graph(id='vacc-prog-bar',
+                      figure=top_vacc,
+                      config={
+                          'displayModeBar': False
+                      },
+                      style={
+                          'width': '100%',
+                          'margin': '0 auto'
+                      }
+                      )
+        ], style={
+            'width': '100%'
+        })
     )
 ])
