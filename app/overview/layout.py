@@ -246,6 +246,41 @@ top_vacc.update_layout(title=dict(text='Countries reporting the most doses admin
                        dragmode=False,
                        )
 
+#################################### vaccinations given #################
+vaccinations = world_data[['location', 'people_vaccinated', 'people_fully_vaccinated']].groupby(by='location').max()
+vaccinations = pd.merge(vaccinations, world_data[['location', 'population']].drop_duplicates(), how='left',
+                        on='location')
+vaccinations['people_vaccinated'] = np.round(vaccinations['people_vaccinated'] * 100 / vaccinations['population'], 2)
+vaccinations['people_fully_vaccinated'] = np.round(
+    vaccinations['people_fully_vaccinated'] * 100 / vaccinations['population'], 2)
+vaccinations['text'] = vaccinations["location"] + '<br>' + vaccinations[
+    "people_vaccinated"].astype(str) + '% received at least one dose<br>' + vaccinations[
+                           "people_fully_vaccinated"].astype(str) + '% have been fully vaccinated'
+
+vac_worldmap = go.Figure(go.Choropleth(locations=vaccinations['location'],
+                                       locationmode='country names',
+                                       text=vaccinations['text'],
+                                       z=vaccinations['people_vaccinated'],
+                                       colorscale='speed',
+                                       showlegend=False))
+
+vac_worldmap.update_geos(projection=dict(type='orthographic',
+                                         scale=1),
+                         landcolor='#595D65',
+                         oceancolor='#262625',
+                         showocean=True,
+                         showlakes=False,
+                         showcountries=True,
+                         bgcolor='#262625'
+                         )
+
+vac_worldmap.update_layout(paper_bgcolor='#262625',
+                           plot_bgcolor='#262625',
+                           height=800,
+                           margin=dict(t=0, l=0, b=0, r=0))
+
+vac_worldmap.update_traces(showscale=False)
+
 #################################### layout #############################
 topCountry = world_data[world_data['date'] >= last_date - datetime.timedelta(days=13)][
     ['date', 'location', 'new_cases', 'new_deaths']].set_index('date')
@@ -471,5 +506,15 @@ layout = html.Div([
         ], style={
             'width': '100%'
         })
-    )
+    ),
+    html.Section([
+        html.Div([
+            dcc.Graph(id='vaccination-map',
+                      figure=vac_worldmap,
+                      config={
+                          'scrollZoom': False
+                      }
+                      )
+        ])
+    ])
 ])
