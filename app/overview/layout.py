@@ -283,7 +283,7 @@ vac_worldmap.update_traces(showscale=False)
 
 #################################### vaccination speed ##################
 vaccination_speed = go.Figure()
-vaccination_speed_data = world_data[world_data['date'] > '2020-11-30'][
+vaccination_speed_data = world_data[(world_data['date'] > '2020-11-30') & (world_data['population'] >= 10000000)][
     ['date', 'location', 'new_vaccinations']].set_index('date').groupby(
     by='location').resample('7D').mean().reset_index()
 locations = vaccination_speed_data['location'].unique()
