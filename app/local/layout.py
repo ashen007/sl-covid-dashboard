@@ -671,11 +671,26 @@ layout = html.Div([
                     f'slower than its fastest 7-day pace.'),
                 style={'width': '64%',
                        'margin': '44px auto'}),
+            html.H5([
+                'This vaccine rollout data is reported by the number of doses of coronavirus vaccines administered, not '
+                'the number of people who have been vaccinated. Because most vaccines require two doses and many countries'
+                ' have different schedules to deliver the second dose, we don’t know with this data how many people have '
+                'ultimately received both doses.',
+            ], style={'color': '#fff',
+                      'margin': '44px auto',
+                      'width': '64%'}),
             dcc.Graph(id='vac-prog',
                       figure=vaccination_progress)], style={'width': '80%',
                                                             'margin': '0 auto'})
     ]),
     html.Div([
+        html.P(
+            children=[dcc.Markdown(
+                'Vaccines offered: **Oxford-AstraZeneca**, **Sinopharm**, **Sputnik V**, **Pfizer-BioNTech**'),
+                dcc.Markdown(
+                    'Vaccination priority groups People are being offered a vaccine based on — occupation and age.')],
+            style={'width': '64%',
+                   'margin': '44px auto'}),
         html.Div([
             dcc.Graph(id='vaccination-eff',
                       figure=vaccination_eff)
@@ -689,6 +704,21 @@ layout = html.Div([
                   'display': 'inline-block'})
     ]),
     html.Div([
+        html.P(
+            children=[
+                dcc.Markdown(
+                    '## What this chart show?'),
+                dcc.Markdown('''
+                This graph compare new cases recorded in  each administrate district with overall island record. through
+                out pandemic western province and it's district are hit harder than other district in sri lanka. this cause
+                a huge impact to country economy because western province give more than 60% contribution to economy in 
+                sri lanka.
+                * color of bubble indicate amount of test done in each day
+                * new cases reported indicate by size of the bubbles
+                '''),
+            ],
+            style={'width': '64%',
+                   'margin': '44px auto'}),
         html.Div([
             dcc.Graph(id='district_bubble')
         ], style={'width': '80%',
@@ -722,6 +752,19 @@ layout = html.Div([
                   'float': 'right'})
     ]),
     html.Div([
+        html.H3('Clusters', style={'color': '#fff',
+                                   'margin': '44px auto',
+                                   'width': '64%'}),
+        html.P(
+            children=[
+                dcc.Markdown('''
+                Other than first two clusters major clusters are Minuwangoda Branidx and third wave (new year) clusters
+                report very quick spread all over the country and more deaths. in third wave reported 33% present of all
+                cases less than month wih setting new recorded . 
+        '''),
+            ],
+            style={'width': '64%',
+                   'margin': '44px auto'}),
         html.Div([
             dcc.Graph(id='cluster-duration',
                       figure=cluster_duration)
@@ -737,10 +780,35 @@ layout = html.Div([
         dcc.Graph(id='cluster-growing-rate',
                   figure=cluster_grow)
     ]),
+    html.P(
+        dcc.Markdown('''
+        ### what it tells,
+        
+        these radars provide simple numerical scale for each wave occurred so far and indicate each wave's magnitude
+         on various factors. to get clear idea compare numbers in circular axis in each radar.
+    '''),
+        style={'width': '64%',
+               'margin': '44px auto'}
+    ),
     html.Div([
         dcc.Graph(id='wave-trace',
                   figure=trace_radar)
     ]),
+    html.H3('Lockdowns', style={'color': '#fff',
+                                'margin': '44px auto',
+                                'width': '64%'}),
+    html.P(
+        dcc.Markdown('''
+        As COVID-19 infections began to be reported around the world, many countries responded by shutting down places 
+        like schools, workplaces and international borders in order to contain the spread of the virus. 
+        This chart shows how different lockdown measures were implemented during the course of the pandemic. education
+        sector is most effected by pandemic. major examinations postponed several times and grade one administration also
+        postponed. still country do not open for tourists after ukraine tourists group visited country recorded new variations
+        of virus and again boarders were close to tourists.
+        '''),
+        style={'width': '64%',
+               'margin': '44px auto'}
+    ),
     html.Div([
         dcc.Dropdown(id='lock-downs',
                      options=[
@@ -756,6 +824,19 @@ layout = html.Div([
         dcc.Graph(id='lock-down-effect')
     ]),
     html.Div([
+        html.H3('How Sri Lanka compares', style={'color': '#fff',
+                                                 'margin': '44px auto',
+                                                 'width': '64%'}),
+        html.P(
+            dcc.Markdown('''
+            There is no one perfect statistic to compare the outbreaks different countries have experienced during this 
+            pandemic. Looking at a variety of metrics gives you a more complete view of the virus’ toll on each country. 
+            These charts show several different statistics, each with their own strengths and weaknesses, that mark the 
+            various ways each country’s outbreak compares in its region and the world.
+        '''),
+            style={'width': '64%',
+                   'margin': '44px auto'}
+        ),
         html.Div([
             dcc.Tabs(id='compare-tabs', value=1,
                      children=[
