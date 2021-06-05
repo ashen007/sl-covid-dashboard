@@ -283,7 +283,8 @@ vac_worldmap.update_traces(showscale=False)
 
 #################################### vaccination speed ##################
 vaccination_speed = go.Figure()
-vaccination_speed_data = world_data[['date', 'location', 'new_vaccinations']].set_index('date').groupby(
+vaccination_speed_data = world_data[world_data['date'] > '2020-11-30'][
+    ['date', 'location', 'new_vaccinations']].set_index('date').groupby(
     by='location').resample('7D').mean().reset_index()
 locations = vaccination_speed_data['location'].unique()
 
@@ -291,8 +292,9 @@ for i in locations:
     df_sub = vaccination_speed_data[vaccination_speed_data['location'] == i]
     df_sub['text'] = '7 day rolling avg: ' + df_sub['new_vaccinations'].astype(str)
     vaccination_speed.add_trace(go.Scatter(x=df_sub['date'],
-                                           y=np.power(df_sub['new_vaccinations'], 1 / 3),
+                                           y=np.power(df_sub['new_vaccinations'], 1 / 2),
                                            name=i,
+                                           text=df_sub['text'],
                                            mode='lines',
                                            line=dict(color='rgba(189, 204, 148, 0.3)',
                                                      width=1.2),
