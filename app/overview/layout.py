@@ -306,7 +306,7 @@ layout = html.Div([
                       }
                       )
         ])
-    ]),
+    ],style={'margin':'24px'}),
     html.Section([
         html.Div([
             dcc.Dropdown(
@@ -331,7 +331,7 @@ layout = html.Div([
             ], style={'width': '48%',
                       'display': 'inline-block',
                       'float': 'right'})])
-    ]),
+    ],style={'margin':'24px'}),
     html.Section([
         html.Div([
             html.Div([
@@ -490,7 +490,7 @@ layout = html.Div([
                       }
                       )
         ])
-    ),
+    ,style={'margin':'24px'}),
     html.Section(
         html.Div([
             dcc.Graph(id='vacc-prog-bar',
@@ -506,7 +506,7 @@ layout = html.Div([
         ], style={
             'width': '100%'
         })
-    ),
+        , style={'margin': '24px'}),
     html.Section([
         html.Div([
             dcc.Graph(id='vaccination-map',
@@ -516,5 +516,21 @@ layout = html.Div([
                       }
                       )
         ])
-    ])
+    ], style={'margin': '24px'}),
+    html.Section([
+        html.Div([
+            dcc.Tabs(id='compare-tabs', value=1,
+                     children=[
+                         dcc.Tab(label='Region', value=1, style={'color': '#fff',
+                                                                 'background-color': '#262625'}),
+                         dcc.Tab(label='Income', value=2, style={'color': '#fff',
+                                                                 'background-color': '#262625'})
+                     ], style={'width': '80%',
+                               'margin': '0 auto'
+                               })
+        ]),
+        html.Div([
+            dcc.Graph(id='vaccination-advantage')
+        ])
+    ], style={'margin': '24px'})
 ])
