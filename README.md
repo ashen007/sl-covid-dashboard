@@ -8,8 +8,12 @@ dashboard - 'https://sl-covid19-dashboard.herokuapp.com'
 - Amila Prasanga Munasingha
 
 ## Data collection
-Our main data source was the our world data set about covid-19. we filter sub part of that data set which relevent to srilanka.
-we use arrbitery imputation method to fill na values before first petiation recorded.
+Our main data source was the our world data set about covid-19. we filter sub part of that data set which relevant to 
+sri lanka. we use arbittery imputation method to fill na values before first case recorded. there is also irregularities 
+in this data may be because some records didn't release daily basis. in that scenario we use forward filling imputation
+method. we used government daily records reports which are in pdf format for get data about how cases distribute through 
+districts and also hospital data. we use some local and international media reports getting more data on lockdowns and 
+travel restrictions.
 
 ## Data Sources
 * OWID repository - https://github.com/owid/covid-19-data/tree/master/public/data
