@@ -520,6 +520,49 @@ trace_radar.update_layout(
     plot_bgcolor='#262625',
     height=425
 )
+############################# is lockdown works #############################
+examin_lockdown = go.Figure()
+examin_lockdown.add_trace(go.Scatter(x=full_df['date'], y=full_df['new_cases'],
+                                     mode='lines', line=dict(color='#497364', width=2.5),
+                                     name='observed'))
+examin_lockdown.add_trace(go.Scatter(x=full_df['date'], y=full_df['new_deaths'],
+                                     mode='lines', line=dict(color='#FF1D23', width=2.5),
+                                     name='observed'))
+
+examin_lockdown.add_vrect(x0='2020-03-18', x1='2020-05-10',
+                          annotation_text='island wide lockdown',
+                          annotation_position='top left',
+                          annotation_font_color='#fff',
+                          fillcolor='#FF665A', opacity=0.25, line_width=0)
+
+examin_lockdown.add_vrect(x0='2020-11-02', x1='2021-03-31',
+                          annotation_text='some areas under lockdown',
+                          annotation_position='top left',
+                          annotation_font_color='#fff',
+                          fillcolor='#F2B705', opacity=0.25, line_width=0)
+
+examin_lockdown.add_vrect(x0='2021-04-01', x1='2021-05-02',
+                          annotation_text='recommended travel restriction',
+                          annotation_position='top left',
+                          annotation_font_color='#fff',
+                          fillcolor='#A6BF4B', opacity=0.25, line_width=0)
+
+examin_lockdown.update_layout(
+    xaxis=dict(title='Date',
+               showgrid=False,
+               showline=False,
+               color='white',
+               zeroline=False),
+    yaxis=dict(title='Count',
+               gridcolor='#404040',
+               gridwidth=1,
+               showline=False,
+               color='white'),
+    legend=dict(font=dict(color='#fff')),
+    paper_bgcolor='#262625',
+    plot_bgcolor='#262625',
+    height=650,
+    transition_duration=500)
 
 ############################# layouts ########################################
 layout = html.Div([
@@ -821,7 +864,20 @@ layout = html.Div([
                             'border-radius': '20px',
                             'margin-bottom': '12px'}
                      ),
-        dcc.Graph(id='lock-down-effect')
+        dcc.Graph(id='lock-down-effect'),
+        html.H3('Is lockdown a solution ?', style={'color': '#fff',
+                                                   'margin': '44px auto',
+                                                   'width': '64%'}),
+        html.P(
+            dcc.Markdown('''
+            not a full solution but a part of a solution, how? lockdown helps to low the curve which getting higher by day
+            then give breathing space to health crew to do their work. but this happens when decision made at right time.
+    '''),
+            style={'width': '64%',
+                   'margin': '44px auto'}
+        ),
+        dcc.Graph(id='is-lockdown-works',
+                  figure=examin_lockdown)
     ]),
     html.Div([
         html.H3('How Sri Lanka compares', style={'color': '#fff',
