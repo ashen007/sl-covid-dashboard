@@ -23,7 +23,19 @@ we mainly try to find how lockdowns effect to spread of virus and how pandemic e
 economy also how we can accomplish fully vaccination. then we compare sri lankan situation with the region and all over
 the world. we drill down local situation into districts and clusters.
 
-### note: 
+#### note: 
+Some times country officials change reporting to include or exclude a certain category of infections or deaths, 
+which can lead to a significant increase or decrease in total and what they reported previously. specially in district
+data.
+
+## How to run this project on local machine
+if you want to run this project on your local machine you need few libraries:
+* numpy
+* pandas
+* flask
+* plotly
+* dash
+* statmodel
 
 ## Data Sources
 
@@ -38,3 +50,16 @@ the world. we drill down local situation into districts and clusters.
 * local media reports - <br>
     - newsFirst https://www.newsfirst.lk/?s=covid<br>
     - adaDerana http://www.adaderana.lk/search_results.php?mode=2&show=1&query=lockdown<br>
+  
+## How to get more insight for plots
+
+you can turn multi level graph in to single level :
+
+* turn off graph by click in legend.
+![turn of graphs](demo/legend.jpg)
+  
+* zoom in by dragging
+![zoom](demo/zoom-in.gif)
+  
+* to get hover labels in  multiple layer
+![multiple hover labels](demo/multiple_labels.gif)
