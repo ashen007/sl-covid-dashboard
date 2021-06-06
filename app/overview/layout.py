@@ -253,6 +253,8 @@ vaccinations = pd.merge(vaccinations, world_data[['location', 'population']].dro
 vaccinations['people_vaccinated'] = np.round(vaccinations['people_vaccinated'] * 100 / vaccinations['population'], 2)
 vaccinations['people_fully_vaccinated'] = np.round(
     vaccinations['people_fully_vaccinated'] * 100 / vaccinations['population'], 2)
+vaccinations.fillna(value=0, inplace=True)
+vaccinations.replace(np.inf, 0, inplace=True)
 vaccinations['text'] = vaccinations["location"] + '<br>' + vaccinations[
     "people_vaccinated"].astype(str) + '% received at least one dose<br>' + vaccinations[
                            "people_fully_vaccinated"].astype(str) + '% have been fully vaccinated'
@@ -338,6 +340,25 @@ thisweek = thisweek.sort_values(by=['new_cases', 'new_deaths'], ascending=False)
                                                                                                             axis=1)
 
 layout = html.Div([
+    html.Div([
+        html.H1('COVID-19',
+                style={'color': '#E5D17F',
+                       'width': '50%',
+                       'margin': '0 auto',
+                       'text-align': 'center',
+                       'font-size': '50px',
+                       'line-height': '56px',
+                       'font-weight': '100'}),
+        html.H4('Global',
+                style={'color': '#E5D17F',
+                       'width': '50%',
+                       'margin': '0 auto',
+                       'text-align': 'center',
+                       'font-size': '24px',
+                       'line-height': '30px',
+                       'font-weight': '100'}
+                )
+    ]),
     html.Section([
         html.Div([
             dcc.Graph(id='world-last7days',
@@ -349,6 +370,29 @@ layout = html.Div([
                           'width': '100%'
                       }
                       )
+        ]),
+        html.Div([
+            html.P(
+                dcc.Markdown(
+                    f'**{top_cases["location"].tail(1).values[0]}** is global center of spreading with weekly new cases avarage'
+                    f' {int(top_cases["new_cases"].tail(1).values[0])}.'),
+                style={'width': '64%',
+                       'margin': '44px auto',
+                       'color': '#CBCCCF',
+                       'text-align': 'center',
+                       'font-size': '24px'
+                       }
+            ),
+            html.P(
+                f'There have been at least {int(data[data["location"] == "World"]["total_cases"].tail(1).values[0])} reported'
+                f' infections and {int(data[data["location"] == "World"]["total_deaths"].tail(1).values[0])} reported deaths '
+                f'caused by the new coronavirus so far.',
+                style={'width': '64%',
+                       'margin': '44px auto',
+                       'color': '#CBCCCF',
+                       'text-align': 'center',
+                       'font-size': '24px'}
+            ),
         ])
     ], style={'margin': '24px'}),
     html.Section([
@@ -362,7 +406,8 @@ layout = html.Div([
                 ],
                 value=1,
                 style={'width': '40%',
-                       'border-radius': '20px'}
+                       'border-radius': '20px'
+                       }
             )
         ]),
         html.Div([
@@ -377,6 +422,18 @@ layout = html.Div([
                       'float': 'right'})])
     ], style={'margin': '24px'}),
     html.Section([
+        html.P(
+            children=[
+                dcc.Markdown(
+                    '## What this chart show?'),
+                dcc.Markdown('''
+                Corona virus hit some countries and territories harder than others. in these charts shows overtime 
+                situation of top countries with highest 7 day rolling average on new cases and deaths last month.
+        '''),
+            ],
+            style={'width': '64%',
+                   'color': '#CBCCCF',
+                   'margin': '44px auto'}),
         html.Div([
             html.Div([
                 dcc.Graph(id='country-situation-cases',
@@ -391,153 +448,275 @@ layout = html.Div([
                       'float': 'right'})]),
         html.Div([
             html.Table(id='top-country-comp',
-                       children=[html.Tr(children=[html.Td(className='case-rate',
+                       children=[html.Th(['Countries reporting the most new infections each day '],
+                                         style={'font-weight': '100'}),
+                                 html.Th(['Countries reporting the most deaths each day'],
+                                         style={'font-weight': '100'}),
+                                 html.Tr(children=[html.Td(className='case-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[0, "location"]}**   '),
+                                                                   f'**{thisweek.loc[0, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[0, "new_cases"]))}   '
-                                                                   f'**{np.round((thisweek.loc[0, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[0, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[0, "new_cases"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[0, "new_cases"]))}           ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}
+                                                               ),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[0, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[0, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[0, "new_cases"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'}
+                                                               )],
                                                            style={'margin-left': '10px'}),
                                                    html.Td(className='death-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[0, "location"]}**   '),
+                                                                   f'**{thisweek.loc[0, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[0, "new_deaths"]))}   '
-                                                                   f'**{np.round((thisweek.loc[0, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[0, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[0, "new_deaths"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[0, "new_deaths"]))}          ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[0, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[0, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[0, "new_deaths"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'})]),
                                  html.Tr(children=[html.Td(className='case-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[1, "location"]}**   '),
+                                                                   f'**{thisweek.loc[1, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[1, "new_cases"]))}   '
-                                                                   f'**{np.round((thisweek.loc[1, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[1, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[1, "new_cases"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[1, "new_cases"]))}           ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[1, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[1, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[1, "new_cases"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'}),
                                                    html.Td(className='death-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[1, "location"]}**   '),
+                                                                   f'**{thisweek.loc[1, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[1, "new_deaths"]))}   '
-                                                                   f'**{np.round((thisweek.loc[1, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[1, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[1, "new_deaths"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[1, "new_deaths"]))}          ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[1, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[1, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[1, "new_deaths"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'})]),
                                  html.Tr(children=[html.Td(className='case-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[2, "location"]}**   '),
+                                                                   f'**{thisweek.loc[2, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[2, "new_cases"]))}   '
-                                                                   f'**{np.round((thisweek.loc[2, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[2, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[2, "new_cases"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[2, "new_cases"]))}           ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[2, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[2, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[2, "new_cases"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'}),
                                                    html.Td(className='death-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[2, "location"]}**   '),
+                                                                   f'**{thisweek.loc[2, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[2, "new_deaths"]))}   '
-                                                                   f'**{np.round((thisweek.loc[2, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[2, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[2, "new_deaths"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[2, "new_deaths"]))}          ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[2, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[2, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[2, "new_deaths"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'})]),
                                  html.Tr(children=[html.Td(className='case-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[3, "location"]}**   '),
+                                                                   f'**{thisweek.loc[3, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[3, "new_cases"]))}   '
-                                                                   f'**{np.round((thisweek.loc[3, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[3, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[3, "new_cases"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[3, "new_cases"]))}           ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[3, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[3, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[3, "new_cases"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'}),
                                                    html.Td(className='death-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[3, "location"]}**   '),
+                                                                   f'**{thisweek.loc[3, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[3, "new_deaths"]))}   '
-                                                                   f'**{np.round((thisweek.loc[3, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[3, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[3, "new_deaths"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[3, "new_deaths"]))}          ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[3, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[3, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[3, "new_deaths"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'})]),
                                  html.Tr(children=[html.Td(className='case-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[4, "location"]}**   '),
+                                                                   f'**{thisweek.loc[4, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[4, "new_cases"]))}   '
-                                                                   f'**{np.round((thisweek.loc[4, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[4, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[4, "new_cases"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[4, "new_cases"]))}           ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[4, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[4, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[4, "new_cases"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'}),
                                                    html.Td(className='death-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[4, "location"]}**   '),
+                                                                   f'**{thisweek.loc[4, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[4, "new_deaths"]))}   '
-                                                                   f'**{np.round((thisweek.loc[4, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[4, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[4, "new_deaths"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[4, "new_deaths"]))}          ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[4, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[4, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[4, "new_deaths"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'})]),
                                  html.Tr(children=[html.Td(className='case-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[5, "location"]}**   '),
+                                                                   f'**{thisweek.loc[5, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[5, "new_cases"]))}   '
-                                                                   f'**{np.round((thisweek.loc[5, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[5, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[5, "new_cases"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[5, "new_cases"]))}           ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[5, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[5, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[5, "new_cases"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'}),
                                                    html.Td(className='death-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[5, "location"]}**   '),
+                                                                   f'**{thisweek.loc[5, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[5, "new_deaths"]))}   '
-                                                                   f'**{np.round((thisweek.loc[5, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[5, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[5, "new_deaths"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[5, "new_deaths"]))}          ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[5, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[5, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[5, "new_deaths"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'})]),
                                  html.Tr(children=[html.Td(className='case-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[6, "location"]}**   '),
+                                                                   f'**{thisweek.loc[6, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[6, "new_cases"]))}   '
-                                                                   f'**{np.round((thisweek.loc[6, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[6, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[6, "new_cases"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[6, "new_cases"]))}           ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[6, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[6, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[6, "new_cases"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'}),
                                                    html.Td(className='death-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[6, "location"]}**   '),
+                                                                   f'**{thisweek.loc[6, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[6, "new_deaths"]))}   '
-                                                                   f'**{np.round((thisweek.loc[6, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[6, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[6, "new_deaths"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[6, "new_deaths"]))}          ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[6, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[6, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[6, "new_deaths"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'})]),
                                  html.Tr(children=[html.Td(className='case-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[7, "location"]}**   '),
+                                                                   f'**{thisweek.loc[7, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[7, "new_cases"]))}   '
-                                                                   f'**{np.round((thisweek.loc[7, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[7, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[7, "new_cases"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[7, "new_cases"]))}           ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[7, "new_cases"] - lastweek[lastweek["location"] == thisweek.loc[7, "location"]]["new_cases"].values[0]) * 100 / thisweek.loc[7, "new_cases"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'}),
                                                    html.Td(className='death-rate',
                                                            children=[html.Span(
                                                                dcc.Markdown(
-                                                                   f'**{thisweek.loc[7, "location"]}**   '),
+                                                                   f'**{thisweek.loc[7, "location"]}**          '),
                                                                style={'color': fill_color[3]}),
                                                                dcc.Markdown(
-                                                                   f'{int(np.rint(thisweek.loc[7, "new_deaths"]))}   '
-                                                                   f'**{np.round((thisweek.loc[7, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[7, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[7, "new_deaths"], 3)}%**')],
+                                                                   f'{int(np.rint(thisweek.loc[7, "new_deaths"]))}          ',
+                                                                   style={'display': 'inline-block',
+                                                                          'width': '48%'}),
+                                                               dcc.Markdown(
+                                                                   f'**{np.round((thisweek.loc[7, "new_deaths"] - lastweek[lastweek["location"] == thisweek.loc[7, "location"]]["new_deaths"].values[0]) * 100 / thisweek.loc[7, "new_deaths"], 3)}%**',
+                                                                   style={'display': 'inline-block',
+                                                                          'margin-left': '-200px',
+                                                                          'width': '48%'})],
                                                            style={'margin-left': '10px'})]),
                                  ], style={'color': '#fff', 'width': '100%', 'margin': '52px auto'})
         ])
     ]),
+    html.P(
+        children=[
+            dcc.Markdown(
+                '## Who is in the peak?'),
+            dcc.Markdown('''
+        COVID-19 has hit some countries far harder than others, though differences in the way infections are 
+        counted locally make it impossible to make a perfect apples-to-apples comparison. '''),
+            html.Br(),
+            dcc.Markdown('''We want to know where infections are trending up or down relative to the size of the outbreak in each country. 
+        So in these charts we use a rolling 7-day average of the new infections countries report each day and compare where 
+        that average is now to where it was at its peak.'''),
+            html.Br(),
+            dcc.Markdown('''The percent of that peak a country currently reports 
+        gives us a better idea of how far it is from containing the spread of the virus relative to the worst 
+        days of its outbreak.
+'''),
+        ],
+        style={'width': '64%',
+               'color': '#CBCCCF',
+               'margin': '44px auto'}),
     html.Section(
         html.Div([
             dcc.Graph(id='peak-map',
@@ -551,6 +730,25 @@ layout = html.Div([
                       )
         ])
         , style={'margin': '24px'}),
+    html.P(
+        children=[
+            dcc.Markdown(
+                '## Vaccination'),
+            dcc.Markdown(f'''
+        So far, at least 198 countries have begun vaccinating people for the coronavirus and have administered at least 
+        {int(data[data['location'] == 'World']['total_vaccinations'].tail(1).values[0])} doses of the vaccine.
+        '''),
+            html.Br(),
+            dcc.Markdown(f'''
+            ***{vaccinations[['location', 'people_vaccinated']].sort_values(by='people_vaccinated', ascending=False).head(1).values[0][0]}*** 
+            leads the world and has administered enough vaccine doses for 
+            **{vaccinations[['location', 'people_vaccinated']].sort_values(by='people_vaccinated', ascending=False).head(1).values[0][1]}%** of 
+            its population, assuming every person needs two doses.
+            '''),
+        ],
+        style={'width': '64%',
+               'color': '#CBCCCF',
+               'margin': '44px auto'}),
     html.Section(
         html.Div([
             dcc.Graph(id='vacc-prog-bar',
@@ -573,11 +771,35 @@ layout = html.Div([
                       figure=vac_worldmap,
                       config={
                           'scrollZoom': False
-                      }
+                      },
+                      style={'margin': '24px'}
                       )
         ])
     ], style={'margin': '24px'}),
     html.Section([
+        html.P(
+            children=[
+                dcc.Markdown(
+                    '## Do some countries have an advantage?'),
+                dcc.Markdown(f'''
+                Yes, generally richer and more developed countries have better health care infrastructure to manufacture
+                , acquire and administer doses.
+    '''),
+                html.Br(),
+                dcc.Markdown(f'''
+                About **53%** of people who have received at least one dose of a coronavirus vaccine were from high income 
+                countries, and at least **50%** were from Europe and North America. 
+                ##### (Again, that only includes data from countries that report these figures. income levels categorise by country GDP per-capita recorded in world bank.)
+        '''),
+                html.Br(),
+                dcc.Markdown(f'''
+                ##### what it tells,
+                ##### it tells how much people get at least one dose by population in different regions and different income level countries. marker size indicate people vaccinated at least one dose.
+        '''),
+            ],
+            style={'width': '64%',
+                   'color': '#CBCCCF',
+                   'margin': '44px auto'}),
         html.Div([
             dcc.Tabs(id='compare-tabs', value=1,
                      children=[
