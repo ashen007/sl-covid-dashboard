@@ -71,9 +71,9 @@ def register_callbacks(dash_app):
     def vaccination_advantage(level):
         vaccinations_bubble = world_data[['continent', 'location', 'people_vaccinated']].groupby(
             by=['continent', 'location']).max()
-        vaccinations_bubble.drop(0, inplace=True)
+        # vaccinations_bubble.drop(0, inplace=True)
         continent_pop = world_data[['continent', 'location', 'population']].groupby(by=['continent', 'location']).max()
-        continent_pop.drop(0, inplace=True)
+        # continent_pop.drop(0, inplace=True)
         vacc_by_continent = pd.merge(vaccinations_bubble.reset_index(), continent_pop.reset_index(), how='left',
                                      on=['continent', 'location'])
         vacc_by_continent['text'] = vacc_by_continent['location'].astype(str) + '<br>' + vacc_by_continent[
