@@ -1,1 +1,1 @@
-web: gunicorn dashapp:server
+web: gunicorn dashapp:server --preload --workers 1
