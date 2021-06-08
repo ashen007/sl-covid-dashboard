@@ -282,6 +282,39 @@ vac_worldmap.update_layout(paper_bgcolor='#262625',
                            margin=dict(t=0, l=0, b=0, r=0))
 
 vac_worldmap.update_traces(showscale=False)
+#################################### vaccine type #######################
+vaccination_data_world = pd.read_csv('app/data/vaccination by location.csv', index_col='location')
+vaccination_data_world = vaccination_data_world.sum()
+
+vacc_type = px.bar(x=vaccination_data_world.index,
+                   y=vaccination_data_world.values,
+                   labels={'x': 'vaccine', 'y': 'count of countries use'})
+
+vacc_type.update_traces(marker_color=fill_color[2])
+
+vacc_type.update_layout(title=dict(text='Vaccines countries currently use',
+                                   font=dict(color='#fff')),
+                        yaxis=dict(
+                            showgrid=True,
+                            showline=False,
+                            showticklabels=True,
+                            gridcolor='#404040',
+                            color='white',
+                        ),
+                        xaxis=dict(
+                            zeroline=False,
+                            showline=False,
+                            showticklabels=True,
+                            showgrid=False,
+                            color='white',
+                        ),
+                        showlegend=False,
+                        margin=dict(l=10, r=10, t=70, b=70),
+                        paper_bgcolor='#262625',
+                        plot_bgcolor='#262625',
+                        height=800,
+                        # dragmode=False,
+                        )
 
 #################################### vaccination speed ##################
 # vaccination_speed = go.Figure()
@@ -751,6 +784,9 @@ layout = html.Div([
                'margin': '44px auto'}),
     html.Section(
         html.Div([
+            dcc.Graph(id='vacine-type-bar',
+                      figure=vacc_type,
+                      style={'margin': '24px 0'}),
             dcc.Graph(id='vacc-prog-bar',
                       figure=top_vacc,
                       config={
